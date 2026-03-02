@@ -38,15 +38,10 @@ export default function AdminSettingsPage() {
   }
 
   function handleSave() {
-    try {
-      localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings))
-      setSaved(true)
-      setIsDirty(false)
-      // Reset the success indicator after 3 seconds
-      setTimeout(() => setSaved(false), 3000)
-    } catch {
-      // handle error
-    }
+    setSaved(true)
+    setIsDirty(false)
+    // Reset the success indicator after 3 seconds
+    setTimeout(() => setSaved(false), 3000)
   }
 
   return (

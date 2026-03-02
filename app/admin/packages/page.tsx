@@ -123,55 +123,44 @@ export default function AdminPackagesPage() {
   }
 
 
-  function compressImage(file: File, callback: (base64: string) => void) {
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      const img = new (window as any).Image()
-      img.onload = () => {
-        const canvas = document.createElement('canvas')
-        let width = img.width
-        let height = img.height
-        const max_size = 1200 // Max dimension
+  const [isUploading, setIsUploading] = useState(false)
 
-        if (width > height) {
-          if (width > max_size) {
-            height *= max_size / width
-            width = max_size
-          }
-        } else {
-          if (height > max_size) {
-            width *= max_size / height
-            height = max_size
-          }
-        }
-        canvas.width = width
-        canvas.height = height
-        const ctx = canvas.getContext('2d')
-        ctx?.drawImage(img, 0, 0, width, height)
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.7) // 70% quality jpeg
-        callback(dataUrl)
+  async function handleFileUpload(file: File, type: "package" | "category" | "itinerary", index?: number) {
+    setIsUploading(true)
+    const toastId = toast.loading(`Uploading ${type} image...`)
+    try {
+      const response = await fetch(`/api/upload?filename=${Date.now()}-${file.name}`, {
+        method: "POST",
+        body: file,
+      })
+
+      if (!response.ok) throw new Error("Upload failed")
+
+      const blob = await response.json()
+
+      if (type === "package") {
+        setForm(f => ({ ...f, image: blob.url }))
+      } else if (type === "category") {
+        setCategoryForm(f => ({ ...f, image: blob.url }))
       }
-      img.src = e.target?.result
+
+      toast.success("Image uploaded successfully", { id: toastId })
+    } catch (error) {
+      console.error("Upload error:", error)
+      toast.error("Failed to upload image to cloud", { id: toastId })
+    } finally {
+      setIsUploading(false)
     }
-    reader.readAsDataURL(file)
   }
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
-    if (file) {
-      compressImage(file, (base64) => {
-        setForm(f => ({ ...f, image: base64 }))
-      })
-    }
+    if (file) handleFileUpload(file, "package")
   }
 
   function handleCategoryFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
-    if (file) {
-      compressImage(file, (base64) => {
-        setCategoryForm(f => ({ ...f, image: base64 }))
-      })
-    }
+    if (file) handleFileUpload(file, "category")
   }
 
   function openEdit(pkg: TourPackage) {
@@ -536,8 +525,10 @@ export default function AdminPackagesPage() {
                     </div>
                   </div>
                   <DialogFooter>
-                    <Button variant="outline" onClick={() => setCategoryAddOpen(false)}>Cancel</Button>
-                    <Button onClick={handleAddCategory}>Add Category</Button>
+                    <Button variant="outline" onClick={() => setCategoryAddOpen(false)} disabled={isUploading}>Cancel</Button>
+                    <Button onClick={handleAddCategory} disabled={isUploading}>
+                      {isUploading ? "Uploading..." : "Add Category"}
+                    </Button>
                   </DialogFooter>
                 </DialogContent>
               </Dialog>
@@ -745,9 +736,9 @@ export default function AdminPackagesPage() {
               <div className="flex gap-2">
                 <Input value={form.image} onChange={e => setForm(f => ({ ...f, image: e.target.value }))} className="flex-1" />
                 <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileChange} />
-                <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()} className="gap-2 shrink-0">
+                <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()} className="gap-2 shrink-0" disabled={isUploading}>
                   <Upload className="h-4 w-4" />
-                  Upload
+                  {isUploading ? "Uploading..." : "Upload"}
                 </Button>
               </div>
               {form.image && (

@@ -95,55 +95,44 @@ export default function AdminVillasPage() {
         setDeleteTarget(null)
     }
 
-    function compressImage(file: File, callback: (base64: string) => void) {
-        const reader = new FileReader()
-        reader.onload = (e) => {
-            const img = new (window as any).Image()
-            img.onload = () => {
-                const canvas = document.createElement('canvas')
-                let width = img.width
-                let height = img.height
-                const max_size = 1200 // Max dimension
+    const [isUploading, setIsUploading] = useState(false)
 
-                if (width > height) {
-                    if (width > max_size) {
-                        height *= max_size / width
-                        width = max_size
-                    }
-                } else {
-                    if (height > max_size) {
-                        width *= max_size / height
-                        height = max_size
-                    }
-                }
-                canvas.width = width
-                canvas.height = height
-                const ctx = canvas.getContext('2d')
-                ctx?.drawImage(img, 0, 0, width, height)
-                const dataUrl = canvas.toDataURL('image/jpeg', 0.7) // 70% quality jpeg
-                callback(dataUrl)
-            }
-            img.src = e.target?.result as string
-        }
-        reader.readAsDataURL(file)
-    }
-
-    function handleRoomFileChange(index: number, e: React.ChangeEvent<HTMLInputElement>) {
-        const file = e.target.files?.[0]
-        if (file) {
-            compressImage(file, (base64) => {
-                updateRoom(index, 'image', base64)
+    async function handleFileUpload(file: File, type: "villa" | "room", index?: number) {
+        setIsUploading(true)
+        const toastId = toast.loading(`Uploading ${type} image...`)
+        try {
+            const response = await fetch(`/api/upload?filename=${Date.now()}-${file.name}`, {
+                method: "POST",
+                body: file,
             })
+
+            if (!response.ok) throw new Error("Upload failed")
+
+            const blob = await response.json()
+
+            if (type === "villa") {
+                setForm(f => ({ ...f, image: blob.url }))
+            } else if (type === "room" && index !== undefined) {
+                updateRoom(index, 'image', blob.url)
+            }
+
+            toast.success("Image uploaded successfully", { id: toastId })
+        } catch (error) {
+            console.error("Upload error:", error)
+            toast.error("Failed to upload image", { id: toastId })
+        } finally {
+            setIsUploading(false)
         }
     }
 
     function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
         const file = e.target.files?.[0]
-        if (file) {
-            compressImage(file, (base64) => {
-                setForm(f => ({ ...f, image: base64 }))
-            })
-        }
+        if (file) handleFileUpload(file, "villa")
+    }
+
+    function handleRoomFileChange(index: number, e: React.ChangeEvent<HTMLInputElement>) {
+        const file = e.target.files?.[0]
+        if (file) handleFileUpload(file, "room", index)
     }
 
     function openEdit(villa: Villa) {
@@ -265,6 +254,7 @@ export default function AdminVillasPage() {
                         <VillaFormContent
                             form={form}
                             setForm={setForm}
+                            isUploading={isUploading}
                             fileInputRef={fileInputRef}
                             handleFileChange={handleFileChange}
                             handleRoomFileChange={handleRoomFileChange}
@@ -273,9 +263,9 @@ export default function AdminVillasPage() {
                             removeRoom={removeRoom}
                         />
                         <DialogFooter>
-                            <Button variant="outline" onClick={() => setAddOpen(false)}>Cancel</Button>
-                            <Button className="bg-primary text-primary-foreground hover:bg-primary/90" onClick={handleAddVilla}>
-                                Create Villa
+                            <Button variant="outline" onClick={() => setAddOpen(false)} disabled={isUploading}>Cancel</Button>
+                            <Button className="bg-primary text-primary-foreground hover:bg-primary/90" onClick={handleAddVilla} disabled={isUploading}>
+                                {isUploading ? "Uploading..." : "Create Villa"}
                             </Button>
                         </DialogFooter>
                     </DialogContent>
@@ -420,6 +410,7 @@ export default function AdminVillasPage() {
                     <VillaFormContent
                         form={form}
                         setForm={setForm}
+                        isUploading={isUploading}
                         fileInputRef={fileInputRef}
                         handleFileChange={handleFileChange}
                         handleRoomFileChange={handleRoomFileChange}
@@ -428,9 +419,9 @@ export default function AdminVillasPage() {
                         removeRoom={removeRoom}
                     />
                     <DialogFooter>
-                        <Button variant="outline" onClick={() => setEditTarget(null)}>Cancel</Button>
-                        <Button className="bg-primary text-primary-foreground hover:bg-primary/90" onClick={handleSaveEdit}>
-                            Save Changes
+                        <Button variant="outline" onClick={() => setEditTarget(null)} disabled={isUploading}>Cancel</Button>
+                        <Button className="bg-primary text-primary-foreground hover:bg-primary/90" onClick={handleSaveEdit} disabled={isUploading}>
+                            {isUploading ? "Uploading..." : "Save Changes"}
                         </Button>
                     </DialogFooter>
                 </DialogContent>
@@ -457,6 +448,7 @@ export default function AdminVillasPage() {
 function VillaFormContent({
     form,
     setForm,
+    isUploading,
     fileInputRef,
     handleFileChange,
     handleRoomFileChange,
@@ -466,6 +458,7 @@ function VillaFormContent({
 }: {
     form: any,
     setForm: any,
+    isUploading: boolean,
     fileInputRef: any,
     handleFileChange: any,
     handleRoomFileChange: (index: number, e: React.ChangeEvent<HTMLInputElement>) => void,
@@ -524,9 +517,9 @@ function VillaFormContent({
                                 className="bg-background rounded-xl border-none shadow-sm h-11 flex-1"
                             />
                             <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileChange} />
-                            <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()} className="h-11 rounded-xl px-4 gap-2 border-primary/20 hover:border-primary transition-all">
+                            <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()} className="h-11 rounded-xl px-4 gap-2 border-primary/20 hover:border-primary transition-all" disabled={isUploading}>
                                 <Upload className="h-4 w-4" />
-                                <span className="hidden sm:inline">Upload</span>
+                                <span className="hidden sm:inline">{isUploading ? "Uploading..." : "Upload"}</span>
                             </Button>
                         </div>
                         {form.image && (
@@ -596,7 +589,7 @@ function VillaFormContent({
                                         ) : (
                                             <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-muted-foreground/60">
                                                 <ImageIcon className="h-8 w-8" />
-                                                <span className="text-[10px] font-bold uppercase">Click to Upload</span>
+                                                <span className="text-[10px] font-bold uppercase">{isUploading ? "Uploading..." : "Click to Upload"}</span>
                                             </div>
                                         )}
                                         <input

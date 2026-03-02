@@ -94,13 +94,26 @@ function loadFromStorage<T>(key: string, fallback: T): T {
     }
 }
 
-function saveToStorage(key: string, value: any) {
+async function saveToCloud(key: string, value: any) {
+    try {
+        await fetch('/api/data', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ key, value })
+        })
+    } catch (e) {
+        console.warn("Cloud sync failed:", e)
+    }
+}
+
+function saveToStorage(key: string, value: any, syncCloud = true) {
     try {
         if (typeof window === 'undefined') return
         localStorage.setItem(key, JSON.stringify(value))
+        if (syncCloud) saveToCloud(key, value)
     } catch (e: any) {
         if (e.name === 'QuotaExceededError' || e.name === 'NS_ERROR_DOM_QUOTA_REACHED') {
-            console.warn("Storage quota reached. Further changes won't be saved until space is cleared.")
+            console.warn("Storage quota reached.")
         }
     }
 }
@@ -125,43 +138,49 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         setMounted(true)
     }, [])
 
-    // Load from localStorage on mount
+    // Load from Cloud (Sync) and fallback to localStorage/mock
     useEffect(() => {
-        const storedPackages = loadFromStorage(KEYS.packages, initialPackages)
-        // Auto-fix empty itineraries or categories if they exist in initialPackages
-        const fixedPackages = storedPackages.map(pkg => {
-            const initial = initialPackages.find(p => p.id === pkg.id)
-            if (initial) {
-                let updated = { ...pkg }
-                let modified = false
+        const syncAll = async () => {
+            try {
+                const keysList = Object.values(KEYS).join(',')
+                const response = await fetch(`/api/data?keys=${keysList}`)
+                const cloudData = await response.json()
 
-                if ((!pkg.itinerary || pkg.itinerary.length === 0) && initial.itinerary.length > 0) {
-                    updated.itinerary = initial.itinerary
-                    modified = true
-                }
+                // Packages Logic
+                const localPkgs = loadFromStorage(KEYS.packages, initialPackages)
+                const finalPkgs = cloudData[KEYS.packages] || localPkgs
 
-                if (!pkg.category && initial.category) {
-                    updated.category = initial.category
-                    modified = true
-                }
+                // Auto-fix itineraries
+                const fixedPackages = finalPkgs.map((pkg: any) => {
+                    const initial = initialPackages.find(p => p.id === pkg.id)
+                    if (initial && (!pkg.itinerary || pkg.itinerary.length === 0) && initial.itinerary.length > 0) {
+                        return { ...pkg, itinerary: initial.itinerary }
+                    }
+                    return pkg
+                })
 
-                return modified ? updated : pkg
+                setPackages(fixedPackages)
+                setHotels(cloudData[KEYS.hotels] || loadFromStorage(KEYS.hotels, initialHotels))
+                setVillas(cloudData[KEYS.villas] || loadFromStorage(KEYS.villas, initialVillas))
+                setAds(cloudData[KEYS.ads] || loadFromStorage(KEYS.ads, initialAds))
+                setBookings(cloudData[KEYS.bookings] || loadFromStorage(KEYS.bookings, initialBookings))
+                setTestimonials(cloudData[KEYS.testimonials] || loadFromStorage(KEYS.testimonials, initialTestimonials))
+                setUsers(cloudData[KEYS.users] || loadFromStorage(KEYS.users, initialUsers))
+                setPayments(cloudData[KEYS.payments] || loadFromStorage(KEYS.payments, initialPayments))
+                setCategories(cloudData[KEYS.categories] || loadFromStorage(KEYS.categories, initialCategories))
+                setSettings(cloudData[KEYS.settings] || loadFromStorage(KEYS.settings, defaultSettings))
+                setFooterData(cloudData[KEYS.footer] || loadFromStorage(KEYS.footer, initialFooterData))
+
+                setHasLoaded(true)
+            } catch (error) {
+                console.error("Critical Cloud Fetch error:", error)
+                // Fallback to local on error
+                setPackages(loadFromStorage(KEYS.packages, initialPackages))
+                setHasLoaded(true)
             }
-            return pkg
-        })
+        }
 
-        setPackages(fixedPackages)
-        setHotels(loadFromStorage(KEYS.hotels, initialHotels))
-        setVillas(loadFromStorage(KEYS.villas, initialVillas))
-        setAds(loadFromStorage(KEYS.ads, initialAds))
-        setBookings(loadFromStorage(KEYS.bookings, initialBookings))
-        setTestimonials(loadFromStorage(KEYS.testimonials, initialTestimonials))
-        setFooterData(loadFromStorage(KEYS.footer, initialFooterData))
-        setUsers(loadFromStorage(KEYS.users, initialUsers))
-        setPayments(loadFromStorage(KEYS.payments, initialPayments))
-        setCategories(loadFromStorage(KEYS.categories, initialCategories))
-        setSettings(loadFromStorage(KEYS.settings, defaultSettings))
-        setHasLoaded(true)
+        syncAll()
     }, [])
 
     // Cross-tab sync: listen for localStorage changes made in OTHER tabs
