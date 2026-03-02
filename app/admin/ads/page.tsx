@@ -3,6 +3,7 @@
 import { useState } from "react"
 import Image from "next/image"
 import { toast } from "sonner"
+import { supabase } from "@/lib/supabase"
 import {
     Plus,
     Pencil,
@@ -68,6 +69,7 @@ export default function AdminAdsPage() {
     const [editTarget, setEditTarget] = useState<Advertisement | null>(null)
     const [deleteTarget, setDeleteTarget] = useState<Advertisement | null>(null)
     const fileInputRef = useRef<HTMLInputElement>(null)
+    const [uploading, setUploading] = useState(false)
 
     const [form, setForm] = useState({
         title: "",
@@ -98,34 +100,34 @@ export default function AdminAdsPage() {
         setDeleteTarget(null)
     }
 
-    const [isUploading, setIsUploading] = useState(false)
 
-    async function handleFileUpload(file: File) {
-        setIsUploading(true)
-        const toastId = toast.loading("Uploading ad image...")
+    async function uploadFile(file: File): Promise<string | null> {
+        setUploading(true)
         try {
-            const response = await fetch(`/api/upload?filename=${Date.now()}-${file.name}`, {
-                method: "POST",
-                body: file,
-            })
-
-            if (!response.ok) throw new Error("Upload failed")
-
-            const blob = await response.json()
-            setForm(f => ({ ...f, image: blob.url }))
-
-            toast.success("Image uploaded successfully", { id: toastId })
-        } catch (error) {
-            console.error("Upload error:", error)
-            toast.error("Failed to upload image", { id: toastId })
+            const fileName = `${Date.now()}-${file.name.replace(/\s+/g, "-")}`
+            const filePath = `ads/${fileName}`
+            const { error } = await supabase.storage.from('uploads').upload(filePath, file)
+            if (error) throw error
+            const { data: { publicUrl } } = supabase.storage.from('uploads').getPublicUrl(filePath)
+            return publicUrl
+        } catch (error: any) {
+            console.error("Ad Upload error:", error)
+            toast.error(`Upload failed: ${error.message || "Unknown error"}`)
+            return null
         } finally {
-            setIsUploading(false)
+            setUploading(false)
         }
     }
 
-    function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
         const file = e.target.files?.[0]
-        if (file) handleFileUpload(file)
+        if (file) {
+            const url = await uploadFile(file)
+            if (url) {
+                setForm(f => ({ ...f, image: url }))
+                toast.success("Ad image uploaded successfully")
+            }
+        }
     }
 
     function openEdit(ad: Advertisement) {
@@ -230,9 +232,9 @@ export default function AdminAdsPage() {
                                 <div className="flex gap-2">
                                     <Input placeholder="/images/promo.jpg" value={form.image} onChange={e => setForm(f => ({ ...f, image: e.target.value }))} className="flex-1" />
                                     <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileChange} />
-                                    <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()} className="gap-2 shrink-0" disabled={isUploading}>
+                                    <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()} className="gap-2 shrink-0" disabled={uploading}>
                                         <Upload className="h-4 w-4" />
-                                        {isUploading ? "Uploading..." : "Upload"}
+                                        {uploading ? "Uploading..." : "Upload"}
                                     </Button>
                                 </div>
                                 {form.image && (
@@ -247,9 +249,9 @@ export default function AdminAdsPage() {
                             </div>
                         </div>
                         <DialogFooter>
-                            <Button variant="outline" onClick={() => setAddOpen(false)} disabled={isUploading}>Cancel</Button>
-                            <Button className="bg-primary text-primary-foreground hover:bg-primary/90" onClick={handleAddAd} disabled={isUploading}>
-                                {isUploading ? "Creating..." : "Create Ad"}
+                            <Button variant="outline" onClick={() => setAddOpen(false)}>Cancel</Button>
+                            <Button className="bg-primary text-primary-foreground hover:bg-primary/90" onClick={handleAddAd}>
+                                Create Ad
                             </Button>
                         </DialogFooter>
                     </DialogContent>
@@ -400,9 +402,9 @@ export default function AdminAdsPage() {
                             <div className="flex gap-2">
                                 <Input value={form.image} onChange={e => setForm(f => ({ ...f, image: e.target.value }))} className="flex-1" />
                                 <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileChange} />
-                                <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()} className="gap-2 shrink-0" disabled={isUploading}>
+                                <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()} className="gap-2 shrink-0" disabled={uploading}>
                                     <Upload className="h-4 w-4" />
-                                    {isUploading ? "Uploading..." : "Upload"}
+                                    {uploading ? "Uploading..." : "Upload"}
                                 </Button>
                             </div>
                             {form.image && (
@@ -417,9 +419,9 @@ export default function AdminAdsPage() {
                         </div>
                     </div>
                     <DialogFooter>
-                        <Button variant="outline" onClick={() => setEditTarget(null)} disabled={isUploading}>Cancel</Button>
-                        <Button className="bg-primary text-primary-foreground hover:bg-primary/90" onClick={handleSaveEdit} disabled={isUploading}>
-                            {isUploading ? "Saving..." : "Save Changes"}
+                        <Button variant="outline" onClick={() => setEditTarget(null)}>Cancel</Button>
+                        <Button className="bg-primary text-primary-foreground hover:bg-primary/90" onClick={handleSaveEdit}>
+                            Save Changes
                         </Button>
                     </DialogFooter>
                 </DialogContent>

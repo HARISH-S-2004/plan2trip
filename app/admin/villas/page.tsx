@@ -3,6 +3,7 @@
 import { useState } from "react"
 import Image from "next/image"
 import { toast } from "sonner"
+import { supabase } from "@/lib/supabase"
 import {
     Plus,
     Pencil,
@@ -64,6 +65,7 @@ export default function AdminVillasPage() {
     const [editTarget, setEditTarget] = useState<Villa | null>(null)
     const [deleteTarget, setDeleteTarget] = useState<Villa | null>(null)
     const fileInputRef = useRef<HTMLInputElement>(null)
+    const [uploading, setUploading] = useState(false)
 
     const [form, setForm] = useState({
         name: "",
@@ -95,44 +97,45 @@ export default function AdminVillasPage() {
         setDeleteTarget(null)
     }
 
-    const [isUploading, setIsUploading] = useState(false)
 
-    async function handleFileUpload(file: File, type: "villa" | "room", index?: number) {
-        setIsUploading(true)
-        const toastId = toast.loading(`Uploading ${type} image...`)
+    async function uploadFile(file: File, folder: string = "villas"): Promise<string | null> {
+        setUploading(true)
         try {
-            const response = await fetch(`/api/upload?filename=${Date.now()}-${file.name}`, {
-                method: "POST",
-                body: file,
-            })
-
-            if (!response.ok) throw new Error("Upload failed")
-
-            const blob = await response.json()
-
-            if (type === "villa") {
-                setForm(f => ({ ...f, image: blob.url }))
-            } else if (type === "room" && index !== undefined) {
-                updateRoom(index, 'image', blob.url)
-            }
-
-            toast.success("Image uploaded successfully", { id: toastId })
-        } catch (error) {
-            console.error("Upload error:", error)
-            toast.error("Failed to upload image", { id: toastId })
+            const fileName = `${Date.now()}-${file.name.replace(/\s+/g, "-")}`
+            const filePath = `${folder}/${fileName}`
+            const { error } = await supabase.storage.from('uploads').upload(filePath, file)
+            if (error) throw error
+            const { data: { publicUrl } } = supabase.storage.from('uploads').getPublicUrl(filePath)
+            return publicUrl
+        } catch (error: any) {
+            console.error("Villa Upload error:", error)
+            toast.error(`Upload failed: ${error.message || "Unknown error"}`)
+            return null
         } finally {
-            setIsUploading(false)
+            setUploading(false)
         }
     }
 
-    function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
         const file = e.target.files?.[0]
-        if (file) handleFileUpload(file, "villa")
+        if (file) {
+            const url = await uploadFile(file)
+            if (url) {
+                setForm(f => ({ ...f, image: url }))
+                toast.success("Villa image uploaded")
+            }
+        }
     }
 
-    function handleRoomFileChange(index: number, e: React.ChangeEvent<HTMLInputElement>) {
+    async function handleRoomFileChange(index: number, e: React.ChangeEvent<HTMLInputElement>) {
         const file = e.target.files?.[0]
-        if (file) handleFileUpload(file, "room", index)
+        if (file) {
+            const url = await uploadFile(file, "rooms")
+            if (url) {
+                updateRoom(index, 'image', url)
+                toast.success("Room image uploaded")
+            }
+        }
     }
 
     function openEdit(villa: Villa) {
@@ -254,18 +257,18 @@ export default function AdminVillasPage() {
                         <VillaFormContent
                             form={form}
                             setForm={setForm}
-                            isUploading={isUploading}
                             fileInputRef={fileInputRef}
                             handleFileChange={handleFileChange}
                             handleRoomFileChange={handleRoomFileChange}
                             addRoom={addRoom}
                             updateRoom={updateRoom}
                             removeRoom={removeRoom}
+                            uploading={uploading}
                         />
                         <DialogFooter>
-                            <Button variant="outline" onClick={() => setAddOpen(false)} disabled={isUploading}>Cancel</Button>
-                            <Button className="bg-primary text-primary-foreground hover:bg-primary/90" onClick={handleAddVilla} disabled={isUploading}>
-                                {isUploading ? "Uploading..." : "Create Villa"}
+                            <Button variant="outline" onClick={() => setAddOpen(false)}>Cancel</Button>
+                            <Button className="bg-primary text-primary-foreground hover:bg-primary/90" onClick={handleAddVilla}>
+                                Create Villa
                             </Button>
                         </DialogFooter>
                     </DialogContent>
@@ -410,18 +413,18 @@ export default function AdminVillasPage() {
                     <VillaFormContent
                         form={form}
                         setForm={setForm}
-                        isUploading={isUploading}
                         fileInputRef={fileInputRef}
                         handleFileChange={handleFileChange}
                         handleRoomFileChange={handleRoomFileChange}
                         addRoom={addRoom}
                         updateRoom={updateRoom}
                         removeRoom={removeRoom}
+                        uploading={uploading}
                     />
                     <DialogFooter>
-                        <Button variant="outline" onClick={() => setEditTarget(null)} disabled={isUploading}>Cancel</Button>
-                        <Button className="bg-primary text-primary-foreground hover:bg-primary/90" onClick={handleSaveEdit} disabled={isUploading}>
-                            {isUploading ? "Uploading..." : "Save Changes"}
+                        <Button variant="outline" onClick={() => setEditTarget(null)}>Cancel</Button>
+                        <Button className="bg-primary text-primary-foreground hover:bg-primary/90" onClick={handleSaveEdit}>
+                            Save Changes
                         </Button>
                     </DialogFooter>
                 </DialogContent>
@@ -448,23 +451,23 @@ export default function AdminVillasPage() {
 function VillaFormContent({
     form,
     setForm,
-    isUploading,
     fileInputRef,
     handleFileChange,
     handleRoomFileChange,
     addRoom,
     updateRoom,
-    removeRoom
+    removeRoom,
+    uploading
 }: {
     form: any,
     setForm: any,
-    isUploading: boolean,
     fileInputRef: any,
     handleFileChange: any,
     handleRoomFileChange: (index: number, e: React.ChangeEvent<HTMLInputElement>) => void,
     addRoom: any,
     updateRoom: any,
-    removeRoom: any
+    removeRoom: any,
+    uploading?: boolean
 }) {
     return (
         <div className="grid gap-6">
@@ -517,9 +520,9 @@ function VillaFormContent({
                                 className="bg-background rounded-xl border-none shadow-sm h-11 flex-1"
                             />
                             <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileChange} />
-                            <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()} className="h-11 rounded-xl px-4 gap-2 border-primary/20 hover:border-primary transition-all" disabled={isUploading}>
+                            <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()} className="h-11 rounded-xl px-4 gap-2 border-primary/20 hover:border-primary transition-all" disabled={uploading}>
                                 <Upload className="h-4 w-4" />
-                                <span className="hidden sm:inline">{isUploading ? "Uploading..." : "Upload"}</span>
+                                <span className="hidden sm:inline">{uploading ? "Uploading..." : "Upload"}</span>
                             </Button>
                         </div>
                         {form.image && (
@@ -588,8 +591,14 @@ function VillaFormContent({
                                             </>
                                         ) : (
                                             <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-muted-foreground/60">
-                                                <ImageIcon className="h-8 w-8" />
-                                                <span className="text-[10px] font-bold uppercase">{isUploading ? "Uploading..." : "Click to Upload"}</span>
+                                                {uploading ? (
+                                                    <span className="text-[10px] font-bold animate-pulse">Uploading...</span>
+                                                ) : (
+                                                    <>
+                                                        <ImageIcon className="h-8 w-8" />
+                                                        <span className="text-[10px] font-bold uppercase">Click to Upload</span>
+                                                    </>
+                                                )}
                                             </div>
                                         )}
                                         <input

@@ -8,12 +8,7 @@ import {
     Search,
     User,
     Star,
-    Save,
-    Upload,
-    ImageIcon
 } from "lucide-react"
-import { useRef } from "react"
-import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -99,37 +94,6 @@ export default function AdminTestimonialsPage() {
         setEditTarget(null)
     }
 
-    const [isUploading, setIsUploading] = useState(false)
-    const fileInputRef = useRef<HTMLInputElement>(null)
-
-    async function handleFileUpload(file: File) {
-        setIsUploading(true)
-        const toastId = toast.loading("Uploading avatar...")
-        try {
-            const response = await fetch(`/api/upload?filename=${Date.now()}-${file.name}`, {
-                method: "POST",
-                body: file,
-            })
-
-            if (!response.ok) throw new Error("Upload failed")
-
-            const blob = await response.json()
-            setForm(f => ({ ...f, avatar: blob.url }))
-
-            toast.success("Avatar uploaded successfully", { id: toastId })
-        } catch (error) {
-            console.error("Upload error:", error)
-            toast.error("Failed to upload avatar", { id: toastId })
-        } finally {
-            setIsUploading(false)
-        }
-    }
-
-    function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-        const file = e.target.files?.[0]
-        if (file) handleFileUpload(file)
-    }
-
     function handleAdd() {
         const newT: Testimonial = {
             id: `t-${Date.now()}`,
@@ -196,27 +160,15 @@ export default function AdminTestimonialsPage() {
                                     <Input type="number" min={1} max={5} value={form.rating} onChange={e => setForm(f => ({ ...f, rating: parseInt(e.target.value) }))} />
                                 </div>
                                 <div className="grid gap-2">
-                                    <Label>Customer Avatar (Image or Initials)</Label>
-                                    <div className="flex gap-2">
-                                        <Input placeholder="JD or Image URL" value={form.avatar} onChange={e => setForm(f => ({ ...f, avatar: e.target.value }))} className="flex-1" />
-                                        <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileChange} />
-                                        <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()} className="gap-2 shrink-0" disabled={isUploading}>
-                                            <Upload className="h-4 w-4" />
-                                            {isUploading ? "Uploading..." : "Upload"}
-                                        </Button>
-                                    </div>
-                                    {form.avatar && form.avatar.startsWith('http') && (
-                                        <div className="mt-2 relative h-12 w-12 rounded-full overflow-hidden border">
-                                            <img src={form.avatar} alt="Avatar" className="h-full w-full object-cover" />
-                                        </div>
-                                    )}
+                                    <Label>Avatar Initials (Optional)</Label>
+                                    <Input placeholder="JD" maxLength={2} value={form.avatar} onChange={e => setForm(f => ({ ...f, avatar: e.target.value }))} />
                                 </div>
                             </div>
                         </div>
                         <DialogFooter>
-                            <Button variant="outline" onClick={() => setAddOpen(false)} disabled={isUploading}>Cancel</Button>
-                            <Button className="bg-primary text-primary-foreground hover:bg-primary/90" onClick={handleAdd} disabled={isUploading}>
-                                {isUploading ? "Saving..." : "Save Testimonial"}
+                            <Button variant="outline" onClick={() => setAddOpen(false)}>Cancel</Button>
+                            <Button className="bg-primary text-primary-foreground hover:bg-primary/90" onClick={handleAdd}>
+                                Save Testimonial
                             </Button>
                         </DialogFooter>
                     </DialogContent>
@@ -271,12 +223,8 @@ export default function AdminTestimonialsPage() {
                                         <TableRow key={t.id}>
                                             <TableCell>
                                                 <div className="flex items-center gap-3">
-                                                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary overflow-hidden">
-                                                        {t.avatar && t.avatar.startsWith('http') ? (
-                                                            <img src={t.avatar} alt={t.name} className="h-full w-full object-cover" />
-                                                        ) : (
-                                                            t.avatar || t.name.substring(0, 2).toUpperCase()
-                                                        )}
+                                                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
+                                                        {t.avatar}
                                                     </div>
                                                     <div className="flex flex-col">
                                                         <span className="font-medium text-foreground">{t.name}</span>
@@ -356,27 +304,15 @@ export default function AdminTestimonialsPage() {
                                 <Input type="number" min={1} max={5} value={form.rating} onChange={e => setForm(f => ({ ...f, rating: parseInt(e.target.value) }))} />
                             </div>
                             <div className="grid gap-2">
-                                <Label>Customer Avatar (Image or Initials)</Label>
-                                <div className="flex gap-2">
-                                    <Input placeholder="JD or Image URL" value={form.avatar} onChange={e => setForm(f => ({ ...f, avatar: e.target.value }))} className="flex-1" />
-                                    <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileChange} />
-                                    <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()} className="gap-2 shrink-0" disabled={isUploading}>
-                                        <Upload className="h-4 w-4" />
-                                        {isUploading ? "Uploading..." : "Upload"}
-                                    </Button>
-                                </div>
-                                {form.avatar && form.avatar.startsWith('http') && (
-                                    <div className="mt-2 relative h-12 w-12 rounded-full overflow-hidden border">
-                                        <img src={form.avatar} alt="Avatar" className="h-full w-full object-cover" />
-                                    </div>
-                                )}
+                                <Label>Avatar Initials</Label>
+                                <Input maxLength={2} value={form.avatar} onChange={e => setForm(f => ({ ...f, avatar: e.target.value }))} />
                             </div>
                         </div>
                     </div>
                     <DialogFooter>
-                        <Button variant="outline" onClick={() => setEditTarget(null)} disabled={isUploading}>Cancel</Button>
-                        <Button className="bg-primary text-primary-foreground hover:bg-primary/90" onClick={handleSaveEdit} disabled={isUploading}>
-                            {isUploading ? "Saving..." : "Save Changes"}
+                        <Button variant="outline" onClick={() => setEditTarget(null)}>Cancel</Button>
+                        <Button className="bg-primary text-primary-foreground hover:bg-primary/90" onClick={handleSaveEdit}>
+                            Save Changes
                         </Button>
                     </DialogFooter>
                 </DialogContent>

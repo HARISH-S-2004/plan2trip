@@ -4,6 +4,7 @@ import { useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { toast } from "sonner"
+import { supabase } from "@/lib/supabase"
 import {
   Plus,
   Pencil,
@@ -80,6 +81,7 @@ export default function AdminPackagesPage() {
   const [formStatus, setFormStatus] = useState<"Active" | "Inactive">("Active")
   const fileInputRef = useRef<HTMLInputElement>(null)
   const categoryFileInputRef = useRef<HTMLInputElement>(null)
+  const [uploading, setUploading] = useState(false)
 
   // Form state for add/edit
   const [form, setForm] = useState({
@@ -123,44 +125,51 @@ export default function AdminPackagesPage() {
   }
 
 
-  const [isUploading, setIsUploading] = useState(false)
 
-  async function handleFileUpload(file: File, type: "package" | "category" | "itinerary", index?: number) {
-    setIsUploading(true)
-    const toastId = toast.loading(`Uploading ${type} image...`)
+  async function uploadFile(file: File): Promise<string | null> {
+    setUploading(true)
     try {
-      const response = await fetch(`/api/upload?filename=${Date.now()}-${file.name}`, {
-        method: "POST",
-        body: file,
-      })
+      // Create a unique file name
+      const fileName = `${Date.now()}-${file.name.replace(/\s+/g, "-")}`
+      const filePath = `uploads/${fileName}`
 
-      if (!response.ok) throw new Error("Upload failed")
+      // Upload to Supabase Storage
+      const { error } = await supabase.storage.from('uploads').upload(filePath, file)
+      if (error) throw error
 
-      const blob = await response.json()
+      // Get the public URL
+      const { data: { publicUrl } } = supabase.storage.from('uploads').getPublicUrl(filePath)
 
-      if (type === "package") {
-        setForm(f => ({ ...f, image: blob.url }))
-      } else if (type === "category") {
-        setCategoryForm(f => ({ ...f, image: blob.url }))
-      }
-
-      toast.success("Image uploaded successfully", { id: toastId })
-    } catch (error) {
-      console.error("Upload error:", error)
-      toast.error("Failed to upload image to cloud", { id: toastId })
+      return publicUrl
+    } catch (error: any) {
+      console.error("Supabase Upload error:", error)
+      toast.error(`Upload failed: ${error.message || "Unknown error"}`)
+      return null
     } finally {
-      setIsUploading(false)
+      setUploading(false)
     }
   }
 
-  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
-    if (file) handleFileUpload(file, "package")
+    if (file) {
+      const url = await uploadFile(file)
+      if (url) {
+        setForm(f => ({ ...f, image: url }))
+        toast.success("Image uploaded successfully")
+      }
+    }
   }
 
-  function handleCategoryFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+  async function handleCategoryFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
-    if (file) handleFileUpload(file, "category")
+    if (file) {
+      const url = await uploadFile(file)
+      if (url) {
+        setCategoryForm(f => ({ ...f, image: url }))
+        toast.success("Category image uploaded successfully")
+      }
+    }
   }
 
   function openEdit(pkg: TourPackage) {
@@ -512,9 +521,9 @@ export default function AdminPackagesPage() {
                       <div className="flex gap-2">
                         <Input placeholder="/images/package-kerala.jpg" value={categoryForm.image} onChange={e => setCategoryForm(f => ({ ...f, image: e.target.value }))} className="flex-1" />
                         <input type="file" ref={categoryFileInputRef} className="hidden" accept="image/*" onChange={handleCategoryFileChange} />
-                        <Button type="button" variant="outline" onClick={() => categoryFileInputRef.current?.click()} className="gap-2 shrink-0">
+                        <Button type="button" variant="outline" onClick={() => categoryFileInputRef.current?.click()} className="gap-2 shrink-0" disabled={uploading}>
                           <Upload className="h-4 w-4" />
-                          Upload
+                          {uploading ? "Uploading..." : "Upload"}
                         </Button>
                       </div>
                       {categoryForm.image && (
@@ -525,10 +534,8 @@ export default function AdminPackagesPage() {
                     </div>
                   </div>
                   <DialogFooter>
-                    <Button variant="outline" onClick={() => setCategoryAddOpen(false)} disabled={isUploading}>Cancel</Button>
-                    <Button onClick={handleAddCategory} disabled={isUploading}>
-                      {isUploading ? "Uploading..." : "Add Category"}
-                    </Button>
+                    <Button variant="outline" onClick={() => setCategoryAddOpen(false)}>Cancel</Button>
+                    <Button onClick={handleAddCategory}>Add Category</Button>
                   </DialogFooter>
                 </DialogContent>
               </Dialog>
@@ -736,9 +743,9 @@ export default function AdminPackagesPage() {
               <div className="flex gap-2">
                 <Input value={form.image} onChange={e => setForm(f => ({ ...f, image: e.target.value }))} className="flex-1" />
                 <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileChange} />
-                <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()} className="gap-2 shrink-0" disabled={isUploading}>
+                <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()} className="gap-2 shrink-0" disabled={uploading}>
                   <Upload className="h-4 w-4" />
-                  {isUploading ? "Uploading..." : "Upload"}
+                  {uploading ? "Uploading..." : "Upload"}
                 </Button>
               </div>
               {form.image && (

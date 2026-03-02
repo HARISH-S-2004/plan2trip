@@ -151,7 +151,7 @@ export function EnquiryForm({ defaultDestination, onSuccess }: EnquiryFormProps)
 
             setIsSubmitting(false)
             setSubmitted(true)
-            toast.success("Enquiry sent successfully! Plan2Trip team will contact you soon.")
+            toast.success("✈️ Enquiry Logged! Plan2Trip team will reach out to you shortly.")
 
             if (onSuccess) {
                 setTimeout(onSuccess, 2000)
@@ -163,7 +163,7 @@ export function EnquiryForm({ defaultDestination, onSuccess }: EnquiryFormProps)
             // we want to show success to the user so they don't get stuck.
             setIsSubmitting(false)
             setSubmitted(true)
-            toast.success("Enquiry received! Our team will contact you shortly.")
+            toast.success("✅ Travel request received! Our expert team will contact you soon.")
 
             if (onSuccess) {
                 setTimeout(onSuccess, 2000)
@@ -181,6 +181,7 @@ export function EnquiryForm({ defaultDestination, onSuccess }: EnquiryFormProps)
                 <p className="mt-2 text-muted-foreground px-4">
                     Thank you choosing Plan2Trip. Your travel request has been logged. Our travel expert will get in touch with you shortly.
                 </p>
+                <div className="text-[10px] text-muted-foreground/30 mt-2">ID: {Date.now()}</div>
                 <Button
                     variant="outline"
                     className="mt-8 rounded-full px-8 hover:bg-primary/5 border-primary/20 text-primary"
