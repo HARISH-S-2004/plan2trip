@@ -121,31 +121,11 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
                 seeded.current = true
                 try {
                     console.log("Checking if seeding is required...");
-                    // Check if system has already been initialized once
-                    const configSnap = await getDocs(collection(db, COLLECTIONS.settings));
-                    const isInitialized = configSnap.docs.some(d => d.id === "settings");
-
-                    if (!isInitialized) {
-                        console.log("First time initialization: Seeding data...");
-                        await Promise.all([
-                            seedCollectionIfEmpty(COLLECTIONS.packages, initialPackages),
-                            seedCollectionIfEmpty(COLLECTIONS.villas, initialVillas),
-                            seedCollectionIfEmpty(COLLECTIONS.hotels, initialHotels),
-                            seedCollectionIfEmpty(COLLECTIONS.bookings, initialBookings),
-                            seedCollectionIfEmpty(COLLECTIONS.users, initialUsers),
-                            seedCollectionIfEmpty(COLLECTIONS.payments, initialPayments),
-                            seedCollectionIfEmpty(COLLECTIONS.ads, initialAds),
-                            seedCollectionIfEmpty(COLLECTIONS.testimonials, initialTestimonials),
-                            seedCollectionIfEmpty(COLLECTIONS.categories, initialCategories),
-                            seedDocIfEmpty(COLLECTIONS.footer, "footer", initialFooterData),
-                            seedDocIfEmpty(COLLECTIONS.settings, "settings", defaultSettings),
-                        ])
-                        console.log("Seeding complete.");
-                    } else {
-                        console.log("System already initialized. Skipping seeding.");
-                    }
-                } catch (err) {
-                    console.error("Firestore seed error:", err)
+                    // Seeding logic removed intentionally.
+                    // The system will accurately reflect the live database content
+                    // and will not automatically insert mock data upon refresh.
+                } catch (error) {
+                    console.error("Initialization check failed:", error);
                 }
             }
 
