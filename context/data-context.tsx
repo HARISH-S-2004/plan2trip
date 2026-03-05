@@ -128,10 +128,8 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
                         seedCollectionIfEmpty(COLLECTIONS.users, initialUsers),
                         seedCollectionIfEmpty(COLLECTIONS.payments, initialPayments),
                         seedCollectionIfEmpty(COLLECTIONS.ads, initialAds),
-                        // seedCollectionIfEmpty("coupons", initialCoupons), // Not defined in original context
-                        // seedCollectionIfEmpty("activities", initialActivities), // Not defined in original context
                         seedCollectionIfEmpty(COLLECTIONS.testimonials, initialTestimonials),
-                        seedCollectionIfEmpty(COLLECTIONS.categories, initialCategories), // Renamed from packageCategories
+                        seedCollectionIfEmpty(COLLECTIONS.categories, initialCategories),
                         seedDocIfEmpty(COLLECTIONS.footer, "footer", initialFooterData),
                         seedDocIfEmpty(COLLECTIONS.settings, "settings", defaultSettings),
                     ])
@@ -181,48 +179,55 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
     // ── Package actions ──────────────────────────────────────────
     const updatePackage = useCallback((updatedPkg: TourPackage) => {
+        setPackages(prev => prev.map(p => p.id === updatedPkg.id ? updatedPkg : p))
         upsertDoc(COLLECTIONS.packages, updatedPkg.id, updatedPkg)
     }, [])
 
     const addPackage = useCallback((newPkg: TourPackage) => {
+        setPackages(prev => [newPkg, ...prev])
         upsertDoc(COLLECTIONS.packages, newPkg.id, newPkg)
     }, [])
 
     const deletePackage = useCallback(async (id: string) => {
-        // Find and delete the image from storage
         const pkg = packages.find((p) => p.id === id)
+        setPackages(prev => prev.filter(p => p.id !== id))
         if (pkg?.image) await deleteImage(pkg.image)
         removeDoc(COLLECTIONS.packages, id)
     }, [packages])
 
     // ── Category actions ─────────────────────────────────────────
     const updateCategory = useCallback((updatedCat: PackageCategory) => {
+        setCategories(prev => prev.map(c => c.id === updatedCat.id ? updatedCat : c))
         upsertDoc(COLLECTIONS.categories, updatedCat.id, updatedCat)
     }, [])
 
     const addCategory = useCallback((newCat: PackageCategory) => {
+        setCategories(prev => [newCat, ...prev])
         upsertDoc(COLLECTIONS.categories, newCat.id, newCat)
     }, [])
 
     const deleteCategory = useCallback(async (id: string) => {
         const cat = categories.find((c) => c.id === id)
+        setCategories(prev => prev.filter(c => c.id !== id))
         if (cat?.image) await deleteImage(cat.image)
         removeDoc(COLLECTIONS.categories, id)
     }, [categories])
 
     // ── Hotel actions ────────────────────────────────────────────
     const updateHotel = useCallback((updatedHotel: Hotel) => {
+        setHotels(prev => prev.map(h => h.id === updatedHotel.id ? updatedHotel : h))
         upsertDoc(COLLECTIONS.hotels, updatedHotel.id, updatedHotel)
     }, [])
 
     const addHotel = useCallback((newHotel: Hotel) => {
+        setHotels(prev => [newHotel, ...prev])
         upsertDoc(COLLECTIONS.hotels, newHotel.id, newHotel)
     }, [])
 
     const deleteHotel = useCallback(async (id: string) => {
         const hotel = hotels.find((h) => h.id === id)
+        setHotels(prev => prev.filter(h => h.id !== id))
         if (hotel?.image) await deleteImage(hotel.image)
-        // Also delete room images
         if (hotel?.rooms) {
             for (const room of hotel.rooms) {
                 if (room.image) await deleteImage(room.image)
@@ -233,15 +238,18 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
     // ── Villa actions ────────────────────────────────────────────
     const updateVilla = useCallback((updatedVilla: Villa) => {
+        setVillas(prev => prev.map(v => v.id === updatedVilla.id ? updatedVilla : v))
         upsertDoc(COLLECTIONS.villas, updatedVilla.id, updatedVilla)
     }, [])
 
     const addVilla = useCallback((newVilla: Villa) => {
+        setVillas(prev => [newVilla, ...prev])
         upsertDoc(COLLECTIONS.villas, newVilla.id, newVilla)
     }, [])
 
     const deleteVilla = useCallback(async (id: string) => {
         const villa = villas.find((v) => v.id === id)
+        setVillas(prev => prev.filter(v => v.id !== id))
         if (villa?.image) await deleteImage(villa.image)
         if (villa?.rooms) {
             for (const room of villa.rooms) {
@@ -253,29 +261,35 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
     // ── Ad actions ───────────────────────────────────────────────
     const updateAd = useCallback((updatedAd: Advertisement) => {
+        setAds(prev => prev.map(a => a.id === updatedAd.id ? updatedAd : a))
         upsertDoc(COLLECTIONS.ads, updatedAd.id, updatedAd)
     }, [])
 
     const addAd = useCallback((newAd: Advertisement) => {
+        setAds(prev => [newAd, ...prev])
         upsertDoc(COLLECTIONS.ads, newAd.id, newAd)
     }, [])
 
     const deleteAd = useCallback(async (id: string) => {
         const ad = ads.find((a) => a.id === id)
+        setAds(prev => prev.filter(a => a.id !== id))
         if (ad?.image) await deleteImage(ad.image)
         removeDoc(COLLECTIONS.ads, id)
     }, [ads])
 
     // ── Booking actions ──────────────────────────────────────────
     const addBooking = useCallback((newBooking: Booking) => {
+        setBookings(prev => [newBooking, ...prev])
         upsertDoc(COLLECTIONS.bookings, newBooking.id, newBooking)
     }, [])
 
     const deleteBooking = useCallback((id: string) => {
+        setBookings(prev => prev.filter(b => b.id !== id))
         removeDoc(COLLECTIONS.bookings, id)
     }, [])
 
     const updateBookingStatus = useCallback((id: string, status: "Confirmed" | "Pending" | "Cancelled") => {
+        setBookings(prev => prev.map(b => b.id === id ? { ...b, status } : b))
         const booking = bookings.find((b) => b.id === id)
         if (booking) {
             upsertDoc(COLLECTIONS.bookings, id, { ...booking, status })
@@ -284,10 +298,12 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
     // ── User actions ─────────────────────────────────────────────
     const deleteUser = useCallback((id: string) => {
+        setUsers(prev => prev.filter(u => u.id !== id))
         removeDoc(COLLECTIONS.users, id)
     }, [])
 
     const updateUserRole = useCallback((id: string, role: string) => {
+        setUsers(prev => prev.map(u => u.id === id ? { ...u, role } : u))
         const user = users.find((u) => u.id === id)
         if (user) {
             upsertDoc(COLLECTIONS.users, id, { ...user, role })
@@ -295,6 +311,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     }, [users])
 
     const toggleUserBlock = useCallback((id: string) => {
+        setUsers(prev => prev.map(u => u.id === id ? { ...u, blocked: !u.blocked } : u))
         const user = users.find((u) => u.id === id)
         if (user) {
             upsertDoc(COLLECTIONS.users, id, { ...user, blocked: !user.blocked })
@@ -302,42 +319,51 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     }, [users])
 
     const addUser = useCallback((newUser: any) => {
+        setUsers(prev => [newUser, ...prev])
         upsertDoc(COLLECTIONS.users, newUser.id, newUser)
     }, [])
 
     // ── Payment actions ──────────────────────────────────────────
     const addPayment = useCallback((newPayment: any) => {
+        setPayments(prev => [newPayment, ...prev])
         upsertDoc(COLLECTIONS.payments, newPayment.id, newPayment)
     }, [])
 
     const updatePayment = useCallback((updatedPayment: any) => {
+        setPayments(prev => prev.map(p => p.id === updatedPayment.id ? updatedPayment : p))
         upsertDoc(COLLECTIONS.payments, updatedPayment.id, updatedPayment)
     }, [])
 
     const deletePayment = useCallback((id: string) => {
+        setPayments(prev => prev.filter(p => p.id !== id))
         removeDoc(COLLECTIONS.payments, id)
     }, [])
 
     // ── Testimonial actions ──────────────────────────────────────
     const updateTestimonial = useCallback((updatedTestimonial: Testimonial) => {
+        setTestimonials(prev => prev.map(t => t.id === updatedTestimonial.id ? updatedTestimonial : t))
         upsertDoc(COLLECTIONS.testimonials, updatedTestimonial.id, updatedTestimonial)
     }, [])
 
     const addTestimonial = useCallback((newTestimonial: Testimonial) => {
+        setTestimonials(prev => [newTestimonial, ...prev])
         upsertDoc(COLLECTIONS.testimonials, newTestimonial.id, newTestimonial)
     }, [])
 
     const deleteTestimonial = useCallback((id: string) => {
+        setTestimonials(prev => prev.filter(t => t.id !== id))
         removeDoc(COLLECTIONS.testimonials, id)
     }, [])
 
     // ── Footer actions ───────────────────────────────────────────
     const updateFooter = useCallback((data: FooterData) => {
+        setFooterData(data)
         upsertDoc(COLLECTIONS.footer, "footer", data)
     }, [])
 
     // ── Settings actions ─────────────────────────────────────────
     const updateSettings = useCallback((newSettings: any) => {
+        setSettings(newSettings)
         upsertDoc(COLLECTIONS.settings, "settings", newSettings)
     }, [])
 
