@@ -103,50 +103,72 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     // ── Seed initial data on first load, then subscribe to real-time updates ──
     useEffect(() => {
         let unsubscribes: (() => void)[] = []
+        let isMounted = true;
 
         async function init() {
-            // Seed collections if they are empty (first-time only)
+            console.log("Initializing DataProvider with Firestore...");
+
+            // Safety timeout: don't stay stuck on a blank screen for more than 4 seconds
+            const timeoutId = setTimeout(() => {
+                if (isMounted && loading) {
+                    console.warn("Firestore initialization timed out, showing app anyway.");
+                    setLoading(false);
+                }
+            }, 4000);
+
             if (!seeded.current) {
                 seeded.current = true
                 try {
+                    console.log("Checking if seeding is required...");
                     await Promise.all([
                         seedCollectionIfEmpty(COLLECTIONS.packages, initialPackages),
-                        seedCollectionIfEmpty(COLLECTIONS.hotels, initialHotels),
                         seedCollectionIfEmpty(COLLECTIONS.villas, initialVillas),
-                        seedCollectionIfEmpty(COLLECTIONS.ads, initialAds),
+                        seedCollectionIfEmpty(COLLECTIONS.hotels, initialHotels),
                         seedCollectionIfEmpty(COLLECTIONS.bookings, initialBookings),
-                        seedCollectionIfEmpty(COLLECTIONS.testimonials, initialTestimonials),
                         seedCollectionIfEmpty(COLLECTIONS.users, initialUsers),
                         seedCollectionIfEmpty(COLLECTIONS.payments, initialPayments),
-                        seedCollectionIfEmpty(COLLECTIONS.categories, initialCategories),
+                        seedCollectionIfEmpty(COLLECTIONS.ads, initialAds),
+                        // seedCollectionIfEmpty("coupons", initialCoupons), // Not defined in original context
+                        // seedCollectionIfEmpty("activities", initialActivities), // Not defined in original context
+                        seedCollectionIfEmpty(COLLECTIONS.testimonials, initialTestimonials),
+                        seedCollectionIfEmpty(COLLECTIONS.categories, initialCategories), // Renamed from packageCategories
                         seedDocIfEmpty(COLLECTIONS.footer, "footer", initialFooterData),
                         seedDocIfEmpty(COLLECTIONS.settings, "settings", defaultSettings),
                     ])
+                    console.log("Seeding check complete.");
                 } catch (err) {
                     console.error("Firestore seed error:", err)
                 }
             }
 
-            // Subscribe to all collections for real-time sync
-            unsubscribes = [
-                subscribeCollection<TourPackage>(COLLECTIONS.packages, setPackages),
-                subscribeCollection<Hotel>(COLLECTIONS.hotels, setHotels),
-                subscribeCollection<Villa>(COLLECTIONS.villas, setVillas),
-                subscribeCollection<Advertisement>(COLLECTIONS.ads, setAds),
-                subscribeCollection<Booking>(COLLECTIONS.bookings, setBookings),
-                subscribeCollection<Testimonial>(COLLECTIONS.testimonials, setTestimonials),
-                subscribeCollection<any>(COLLECTIONS.users, setUsers),
-                subscribeCollection<any>(COLLECTIONS.payments, setPayments),
-                subscribeCollection<PackageCategory>(COLLECTIONS.categories, setCategories),
-                subscribeDoc<FooterData>(COLLECTIONS.footer, "footer", (data) => {
-                    if (data) setFooterData(data)
-                }),
-                subscribeDoc<any>(COLLECTIONS.settings, "settings", (data) => {
-                    if (data) setSettings(data)
-                }),
-            ]
+            try {
+                unsubscribes = [
+                    subscribeCollection<TourPackage>(COLLECTIONS.packages, setPackages),
+                    subscribeCollection<Hotel>(COLLECTIONS.hotels, setHotels),
+                    subscribeCollection<Villa>(COLLECTIONS.villas, setVillas),
+                    subscribeCollection<Advertisement>(COLLECTIONS.ads, setAds),
+                    subscribeCollection<Booking>(COLLECTIONS.bookings, setBookings),
+                    subscribeCollection<Testimonial>(COLLECTIONS.testimonials, setTestimonials),
+                    subscribeCollection<any>(COLLECTIONS.users, setUsers),
+                    subscribeCollection<any>(COLLECTIONS.payments, setPayments),
+                    subscribeCollection<PackageCategory>(COLLECTIONS.categories, setCategories),
+                    subscribeDoc<FooterData>(COLLECTIONS.footer, "footer", (data) => {
+                        if (data) setFooterData(data)
+                    }),
+                    subscribeDoc<any>(COLLECTIONS.settings, "settings", (data) => {
+                        if (data) setSettings(data)
+                    }),
+                ]
+                console.log("Real-time subscriptions established.");
+            } catch (err) {
+                console.error("Subscription error:", err);
+            }
 
-            setLoading(false)
+            if (isMounted) {
+                clearTimeout(timeoutId);
+                setLoading(false);
+                console.log("DataProvider initialization complete.");
+            }
         }
 
         init()
