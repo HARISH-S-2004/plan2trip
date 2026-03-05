@@ -116,8 +116,16 @@ export default function AdminHotelsPage() {
             return url
         } catch (error: any) {
             clearTimeout(timeoutId)
-            console.error("Hotel Upload error:", error)
-            toast.error(`Upload failed: ${error.message || "Unknown error"}. Check if an adblocker is blocking Firebase.`)
+            console.error("Hotel Upload error details:", error)
+
+            let msg = error.message || "Unknown error"
+            if (error.code === 'storage/unauthorized' || msg.includes('403')) {
+                msg = "Permission Denied. Enable Firebase Storage in Console and set rules to public."
+            } else if (error.code === 'storage/project-not-found' || msg.includes('404')) {
+                msg = "Storage Not Enabled. Go to Firebase Console > Storage > Get Started."
+            }
+
+            toast.error(`Upload Failed: ${msg}`)
             return null
         } finally {
             setUploading(false)

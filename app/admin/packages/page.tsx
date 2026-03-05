@@ -145,8 +145,16 @@ export default function AdminPackagesPage() {
       return url
     } catch (error: any) {
       clearTimeout(timeoutId)
-      console.error("Upload error:", error)
-      toast.error(`Upload failed: ${error.message || "Unknown error"}. Check if an adblocker is blocking Firebase.`)
+      console.error("Upload error details:", error)
+
+      let msg = error.message || "Unknown error"
+      if (error.code === 'storage/unauthorized' || msg.includes('403')) {
+        msg = "Permission Denied. Please enable Firebase Storage in your console and set rules to public."
+      } else if (error.code === 'storage/project-not-found' || msg.includes('404')) {
+        msg = "Firebase Storage is not enabled for this project. Please go to the Firebase Console and click 'Get Started' in the Storage tab."
+      }
+
+      toast.error(`Upload Failed: ${msg}`, { duration: 5000 })
       return null
     } finally {
       setUploading(false)
