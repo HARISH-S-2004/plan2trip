@@ -104,14 +104,12 @@ export default function AdminAdsPage() {
     async function uploadFile(file: File): Promise<string | null> {
         setUploading(true)
 
-        // Safety timeout: reset "uploading" state after 10 seconds if it hangs
         const timeoutId = setTimeout(() => {
             setUploading(false)
             console.warn("Upload timed out - resetting state.")
         }, 10000)
 
         try {
-            // If editing, replace old image; otherwise just upload
             const oldUrl = editTarget?.image || form.image
             const url = oldUrl
                 ? await replaceImage(file, "ads", oldUrl)
@@ -121,8 +119,16 @@ export default function AdminAdsPage() {
             return url
         } catch (error: any) {
             clearTimeout(timeoutId)
-            console.error("Ad Upload error:", error)
-            toast.error(`Upload failed: ${error.message || "Unknown error"}. Check if an adblocker is blocking Firebase.`)
+            console.error("Ad Upload error details:", error)
+
+            let msg = error.message || "Unknown error"
+            if (error.code === 'storage/unauthorized' || msg.includes('403')) {
+                msg = "Permission Denied. Enable Firebase Storage in Console and set rules to public."
+            } else if (error.code === 'storage/project-not-found' || msg.includes('404')) {
+                msg = "Storage Not Enabled. Go to Firebase Console > Storage > Get Started."
+            }
+
+            toast.error(`Upload Failed: ${msg}`)
             return null
         } finally {
             setUploading(false)
