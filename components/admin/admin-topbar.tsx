@@ -20,7 +20,7 @@ interface AdminTopbarProps {
 
 export function AdminTopbar({ onMobileMenuToggle }: AdminTopbarProps) {
   return (
-    <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-border bg-card/80 px-4 backdrop-blur-lg lg:px-6">
+    <header data-admin="true" className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-border bg-card/80 px-4 backdrop-blur-lg lg:px-6">
       <div className="flex items-center gap-2 sm:gap-4">
         <Button
           variant="ghost"
