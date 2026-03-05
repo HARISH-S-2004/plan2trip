@@ -126,28 +126,26 @@ export default function AdminPackagesPage() {
 
 
 
-  async function uploadFile(file: File): Promise<string | null> {
+  async function uploadFile(file: File, folder: string = "packages", customOldUrl?: string): Promise<string | null> {
     setUploading(true)
 
     // Safety timeout: reset "uploading" state after 10 seconds if it hangs
     const timeoutId = setTimeout(() => {
-      if (uploading) {
-        setUploading(false)
-        console.warn("Upload timed out - resetting state.")
-      }
+      setUploading(false)
+      console.warn("Upload timed out - resetting state.")
     }, 10000)
 
     try {
-      const oldUrl = editTarget?.image || form.image
+      const oldUrl = customOldUrl || editTarget?.image || form.image
       const url = oldUrl
-        ? await replaceImage(file, "packages", oldUrl)
-        : await uploadImage(file, "packages")
+        ? await replaceImage(file, folder, oldUrl)
+        : await uploadImage(file, folder)
 
       clearTimeout(timeoutId)
       return url
     } catch (error: any) {
       clearTimeout(timeoutId)
-      console.error("Package Upload error:", error)
+      console.error("Upload error:", error)
       toast.error(`Upload failed: ${error.message || "Unknown error"}. Check if an adblocker is blocking Firebase.`)
       return null
     } finally {
@@ -169,7 +167,8 @@ export default function AdminPackagesPage() {
   async function handleCategoryFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (file) {
-      const url = await uploadFile(file)
+      const oldUrl = categoryEditTarget?.image || categoryForm.image
+      const url = await uploadFile(file, "categories", oldUrl)
       if (url) {
         setCategoryForm(f => ({ ...f, image: url }))
         toast.success("Category image uploaded successfully")
@@ -879,9 +878,9 @@ export default function AdminPackagesPage() {
               <div className="flex gap-2">
                 <Input value={categoryForm.image} onChange={e => setCategoryForm(f => ({ ...f, image: e.target.value }))} className="flex-1" />
                 <input type="file" ref={categoryFileInputRef} className="hidden" accept="image/*" onChange={handleCategoryFileChange} />
-                <Button type="button" variant="outline" onClick={() => categoryFileInputRef.current?.click()} className="gap-2 shrink-0">
+                <Button type="button" variant="outline" onClick={() => categoryFileInputRef.current?.click()} className="gap-2 shrink-0" disabled={uploading}>
                   <Upload className="h-4 w-4" />
-                  Upload
+                  {uploading ? "Uploading..." : "Upload"}
                 </Button>
               </div>
               {categoryForm.image && (
@@ -968,9 +967,9 @@ export default function AdminPackagesPage() {
               <div className="flex gap-2">
                 <Input id="pkg-image" placeholder="/images/package-bali.jpg" value={form.image} onChange={e => setForm(f => ({ ...f, image: e.target.value }))} className="flex-1" />
                 <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileChange} />
-                <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()} className="gap-2 shrink-0">
+                <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()} className="gap-2 shrink-0" disabled={uploading}>
                   <Upload className="h-4 w-4" />
-                  Upload
+                  {uploading ? "Uploading..." : "Upload"}
                 </Button>
               </div>
             </div>

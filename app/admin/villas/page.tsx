@@ -98,7 +98,7 @@ export default function AdminVillasPage() {
     }
 
 
-    async function uploadFile(file: File, folder: string = "villas"): Promise<string | null> {
+    async function uploadFile(file: File, folder: string = "villas", customOldUrl?: string): Promise<string | null> {
         setUploading(true)
 
         // Safety timeout: reset "uploading" state after 10 seconds if it hangs
@@ -108,7 +108,7 @@ export default function AdminVillasPage() {
         }, 10000)
 
         try {
-            const oldUrl = editTarget?.image || form.image
+            const oldUrl = customOldUrl || editTarget?.image || form.image
             const url = oldUrl
                 ? await replaceImage(file, folder, oldUrl)
                 : await uploadImage(file, folder)
@@ -128,7 +128,8 @@ export default function AdminVillasPage() {
     async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
         const file = e.target.files?.[0]
         if (file) {
-            const url = await uploadFile(file)
+            const oldUrl = editTarget?.image || form.image
+            const url = await uploadFile(file, "villas", oldUrl)
             if (url) {
                 setForm(f => ({ ...f, image: url }))
                 toast.success("Villa image uploaded")
@@ -139,7 +140,8 @@ export default function AdminVillasPage() {
     async function handleRoomFileChange(index: number, e: React.ChangeEvent<HTMLInputElement>) {
         const file = e.target.files?.[0]
         if (file) {
-            const url = await uploadFile(file, "rooms")
+            const oldUrl = form.rooms[index]?.image
+            const url = await uploadFile(file, "rooms", oldUrl)
             if (url) {
                 updateRoom(index, 'image', url)
                 toast.success("Room image uploaded")
