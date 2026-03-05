@@ -99,15 +99,25 @@ export default function AdminHotelsPage() {
 
     async function uploadFile(file: File, folder: string = "hotels"): Promise<string | null> {
         setUploading(true)
+
+        // Safety timeout: reset "uploading" state after 10 seconds if it hangs
+        const timeoutId = setTimeout(() => {
+            setUploading(false)
+            console.warn("Upload timed out - resetting state.")
+        }, 10000)
+
         try {
             const oldUrl = editTarget?.image || form.image
             const url = oldUrl
                 ? await replaceImage(file, folder, oldUrl)
                 : await uploadImage(file, folder)
+
+            clearTimeout(timeoutId)
             return url
         } catch (error: any) {
+            clearTimeout(timeoutId)
             console.error("Hotel Upload error:", error)
-            toast.error(`Upload failed: ${error.message || "Unknown error"}`)
+            toast.error(`Upload failed: ${error.message || "Unknown error"}. Check if an adblocker is blocking Firebase.`)
             return null
         } finally {
             setUploading(false)

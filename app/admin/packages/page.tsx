@@ -128,15 +128,27 @@ export default function AdminPackagesPage() {
 
   async function uploadFile(file: File): Promise<string | null> {
     setUploading(true)
+
+    // Safety timeout: reset "uploading" state after 10 seconds if it hangs
+    const timeoutId = setTimeout(() => {
+      if (uploading) {
+        setUploading(false)
+        console.warn("Upload timed out - resetting state.")
+      }
+    }, 10000)
+
     try {
       const oldUrl = editTarget?.image || form.image
       const url = oldUrl
         ? await replaceImage(file, "packages", oldUrl)
         : await uploadImage(file, "packages")
+
+      clearTimeout(timeoutId)
       return url
     } catch (error: any) {
+      clearTimeout(timeoutId)
       console.error("Package Upload error:", error)
-      toast.error(`Upload failed: ${error.message || "Unknown error"}`)
+      toast.error(`Upload failed: ${error.message || "Unknown error"}. Check if an adblocker is blocking Firebase.`)
       return null
     } finally {
       setUploading(false)
@@ -312,14 +324,13 @@ export default function AdminPackagesPage() {
           variant="outline"
           size="sm"
           onClick={() => {
-            if (confirm("This will delete all your local changes (uploads, edits) and restore the default site data. Continue?")) {
-              localStorage.clear();
+            if (confirm("This will refresh your local view and attempt to re-sync with Firestore. Continue?")) {
               window.location.reload();
             }
           }}
-          className="text-destructive hover:bg-destructive/10 border-destructive/20 text-[10px] font-bold uppercase tracking-widest h-7"
+          className="text-primary hover:bg-primary/10 border-primary/20 text-[10px] font-bold uppercase tracking-widest h-7"
         >
-          Reset Database
+          Refresh Data
         </Button>
       </div>
 
