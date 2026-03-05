@@ -149,11 +149,10 @@ export default function AdminPackagesPage() {
 
       let msg = error.message || "Unknown error"
       if (error.code === 'storage/unauthorized' || msg.includes('403')) {
-        msg = "Permission Denied. Please enable Firebase Storage in your console and set rules to public."
-      } else if (error.code === 'storage/project-not-found' || msg.includes('404')) {
-        msg = "Firebase Storage is not enabled for this project. Please go to the Firebase Console and click 'Get Started' in the Storage tab."
+        msg = "Permission Denied. Please check your Supabase Storage policies."
+      } else if (msg.includes('404')) {
+        msg = "Supabase Storage bucket 'uploads' not found."
       }
-
       toast.error(`Upload Failed: ${msg}`, { duration: 5000 })
       return null
     } finally {

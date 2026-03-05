@@ -1,4 +1,5 @@
-import { db, storage } from "./firebase";
+import { db } from "./firebase";
+import { supabase } from "./supabase";
 import {
     collection,
     doc,
@@ -10,12 +11,6 @@ import {
     query,
     type Unsubscribe,
 } from "firebase/firestore";
-import {
-    ref,
-    uploadBytes,
-    getDownloadURL,
-    deleteObject,
-} from "firebase/storage";
 
 // ─── Collection Names ───────────────────────────────────────────────
 export const COLLECTIONS = {
@@ -105,10 +100,10 @@ export async function seedDocIfEmpty(collectionName: string, docId: string, data
     }
 }
 
-// ─── Firebase Storage helpers (with old-image cleanup) ──────────────
+// ─── Supabase Storage helpers (Replacing Firebase Storage) ──────────
 
 /**
- * Upload a file to Firebase Storage.
+ * Upload a file to Supabase Storage.
  * Returns the public download URL.
  */
 export async function uploadImage(
@@ -117,28 +112,42 @@ export async function uploadImage(
 ): Promise<string> {
     const fileName = `${Date.now()}-${file.name.replace(/\s+/g, "-")}`;
     const filePath = `${folder}/${fileName}`;
-    const storageRef = ref(storage, filePath);
-    await uploadBytes(storageRef, file);
-    const url = await getDownloadURL(storageRef);
-    return url;
+
+    const { data, error } = await supabase.storage
+        .from("uploads")
+        .upload(filePath, file);
+
+    if (error) throw error;
+
+    const { data: { publicUrl } } = supabase.storage
+        .from("uploads")
+        .getPublicUrl(filePath);
+
+    return publicUrl;
 }
 
 /**
- * Delete an image from Firebase Storage by its download URL.
- * Silently ignores errors (e.g., file already deleted, or it's a local /images/ path).
+ * Delete an image from Storage.
  */
 export async function deleteImage(imageUrl: string) {
-    // Only delete if it's a Firebase Storage URL
-    if (!imageUrl || !imageUrl.includes("firebasestorage")) return;
+    // Check if it's a Supabase URL
+    if (!imageUrl || !imageUrl.includes("supabase.co")) return;
+
     try {
-        const storageRef = ref(storage, imageUrl);
-        await deleteObject(storageRef);
-        console.log("Deleted old image:", imageUrl);
+        // Extract the file path from the URL
+        // Example: https://.../storage/v1/object/public/uploads/folder/filename.jpg
+        const parts = imageUrl.split("/uploads/");
+        if (parts.length < 2) return;
+        const filePath = parts[1];
+
+        const { error } = await supabase.storage
+            .from("uploads")
+            .remove([filePath]);
+
+        if (error) throw error;
+        console.log("Deleted old image from Supabase:", filePath);
     } catch (error: any) {
-        // Ignore "object-not-found" — it was already deleted
-        if (error?.code !== "storage/object-not-found") {
-            console.warn("Could not delete old image:", error.message);
-        }
+        console.warn("Could not delete image:", error.message);
     }
 }
 
