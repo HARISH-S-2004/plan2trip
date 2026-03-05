@@ -92,11 +92,11 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     const [ads, setAds] = useState<Advertisement[]>(initialAds)
     const [bookings, setBookings] = useState<Booking[]>(initialBookings)
     const [testimonials, setTestimonials] = useState<Testimonial[]>(initialTestimonials)
-    const [footerData, setFooterData] = useState<FooterData>(initialFooterData)
+    const [categories, setCategories] = useState<PackageCategory[]>(initialCategories)
     const [users, setUsers] = useState<any[]>(initialUsers)
     const [payments, setPayments] = useState<any[]>(initialPayments)
-    const [categories, setCategories] = useState<PackageCategory[]>(initialCategories)
-    const [settings, setSettings] = useState(defaultSettings)
+    const [footerData, setFooterData] = useState<FooterData>(initialFooterData)
+    const [settings, setSettings] = useState<any>(defaultSettings)
 
     const seeded = useRef(false)
 
@@ -141,6 +141,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
                 }
             }
 
+            // If connection is blocked (net::ERR_BLOCKED_BY_CLIENT), we still want to show the app
             try {
                 unsubscribes = [
                     subscribeCollection<TourPackage>(COLLECTIONS.packages, setPackages),
@@ -161,13 +162,13 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
                 ]
                 console.log("Real-time subscriptions established.");
             } catch (err) {
-                console.error("Subscription error:", err);
+                console.error("Subscription error (Firestore might be blocked):", err);
             }
 
             if (isMounted) {
                 clearTimeout(timeoutId);
                 setLoading(false);
-                console.log("DataProvider initialization complete.");
+                console.log("DataProvider initialization complete (showing app).");
             }
         }
 
