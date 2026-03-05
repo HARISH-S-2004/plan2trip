@@ -265,75 +265,74 @@ export default function AdminTestimonialsPage() {
                                     ))
                                 )}
                             </TableBody>
-                        </TableBody>
-                    </Table>
-                </div>
-            </CardContent>
-        </Card>
+                        </Table>
+                    </div>
+                </CardContent>
+            </Card>
 
-            {/* Edit Dialog */ }
-    <Dialog open={!!editTarget} onOpenChange={(open) => !open && setEditTarget(null)}>
-        <DialogContent className="max-w-[95vw] sm:max-w-lg max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-                <DialogTitle>Edit Testimonial</DialogTitle>
-                <DialogDescription>
-                    Update the customer's feedback.
-                </DialogDescription>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="grid gap-2">
-                        <Label>Customer Name</Label>
-                        <Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
+            {/* Edit Dialog */}
+            <Dialog open={!!editTarget} onOpenChange={(open) => !open && setEditTarget(null)}>
+                <DialogContent className="max-w-[95vw] sm:max-w-lg max-h-[90vh] overflow-y-auto">
+                    <DialogHeader>
+                        <DialogTitle>Edit Testimonial</DialogTitle>
+                        <DialogDescription>
+                            Update the customer's feedback.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div className="grid gap-2">
+                                <Label>Customer Name</Label>
+                                <Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
+                            </div>
+                            <div className="grid gap-2">
+                                <Label>Location</Label>
+                                <Input value={form.location} onChange={e => setForm(f => ({ ...f, location: e.target.value }))} />
+                            </div>
+                        </div>
+                        <div className="grid gap-2">
+                            <Label>Review Text</Label>
+                            <Textarea
+                                className="min-h-[100px]"
+                                value={form.text}
+                                onChange={e => setForm(f => ({ ...f, text: e.target.value }))}
+                            />
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div className="grid gap-2">
+                                <Label>Rating (1-5)</Label>
+                                <Input type="number" min={1} max={5} value={form.rating} onChange={e => setForm(f => ({ ...f, rating: parseInt(e.target.value) }))} />
+                            </div>
+                            <div className="grid gap-2">
+                                <Label>Avatar Initials</Label>
+                                <Input maxLength={2} value={form.avatar} onChange={e => setForm(f => ({ ...f, avatar: e.target.value }))} />
+                            </div>
+                        </div>
                     </div>
-                    <div className="grid gap-2">
-                        <Label>Location</Label>
-                        <Input value={form.location} onChange={e => setForm(f => ({ ...f, location: e.target.value }))} />
-                    </div>
-                </div>
-                <div className="grid gap-2">
-                    <Label>Review Text</Label>
-                    <Textarea
-                        className="min-h-[100px]"
-                        value={form.text}
-                        onChange={e => setForm(f => ({ ...f, text: e.target.value }))}
-                    />
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="grid gap-2">
-                        <Label>Rating (1-5)</Label>
-                        <Input type="number" min={1} max={5} value={form.rating} onChange={e => setForm(f => ({ ...f, rating: parseInt(e.target.value) }))} />
-                    </div>
-                    <div className="grid gap-2">
-                        <Label>Avatar Initials</Label>
-                        <Input maxLength={2} value={form.avatar} onChange={e => setForm(f => ({ ...f, avatar: e.target.value }))} />
-                    </div>
-                </div>
-            </div>
-            <DialogFooter>
-                <Button variant="outline" onClick={() => setEditTarget(null)}>Cancel</Button>
-                <Button className="bg-primary text-primary-foreground hover:bg-primary/90" onClick={handleSaveEdit}>
-                    Save Changes
-                </Button>
-            </DialogFooter>
-        </DialogContent>
-    </Dialog>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setEditTarget(null)}>Cancel</Button>
+                        <Button className="bg-primary text-primary-foreground hover:bg-primary/90" onClick={handleSaveEdit}>
+                            Save Changes
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
 
-    {/* Delete Confirmation */ }
-    <Dialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
-        <DialogContent>
-            <DialogHeader>
-                <DialogTitle>Delete Testimonial</DialogTitle>
-                <DialogDescription>
-                    Are you sure you want to remove this testimonial? This action cannot be undone.
-                </DialogDescription>
-            </DialogHeader>
-            <DialogFooter>
-                <Button variant="outline" onClick={() => setDeleteTarget(null)}>Cancel</Button>
-                <Button variant="destructive" onClick={handleDelete}>Delete</Button>
-            </DialogFooter>
-        </DialogContent>
-    </Dialog>
+            {/* Delete Confirmation */}
+            <Dialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Delete Testimonial</DialogTitle>
+                        <DialogDescription>
+                            Are you sure you want to remove this testimonial? This action cannot be undone.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setDeleteTarget(null)}>Cancel</Button>
+                        <Button variant="destructive" onClick={handleDelete}>Delete</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div >
     )
 }
