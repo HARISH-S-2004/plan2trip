@@ -9,6 +9,7 @@ import {
     testimonials as initialTestimonials, initialFooterData, initialCategories,
 } from "@/lib/data"
 import { adminUsers as initialUsers } from "@/lib/admin-data"
+import { toast } from "sonner"
 import {
     COLLECTIONS,
     upsertDoc, removeDoc,
@@ -178,39 +179,73 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     }, [])
 
     // ── Package actions ──────────────────────────────────────────
-    const updatePackage = useCallback((updatedPkg: TourPackage) => {
+    const updatePackage = useCallback(async (updatedPkg: TourPackage) => {
+        const oldPackages = [...packages];
         setPackages(prev => prev.map(p => p.id === updatedPkg.id ? updatedPkg : p))
-        upsertDoc(COLLECTIONS.packages, updatedPkg.id, updatedPkg)
-    }, [])
+        try {
+            await upsertDoc(COLLECTIONS.packages, updatedPkg.id, updatedPkg)
+        } catch (error: any) {
+            setPackages(oldPackages);
+            toast.error("Database Save Failed! Please check if Firestore is enabled and AdBlock is off.");
+        }
+    }, [packages])
 
-    const addPackage = useCallback((newPkg: TourPackage) => {
+    const addPackage = useCallback(async (newPkg: TourPackage) => {
         setPackages(prev => [newPkg, ...prev])
-        upsertDoc(COLLECTIONS.packages, newPkg.id, newPkg)
+        try {
+            await upsertDoc(COLLECTIONS.packages, newPkg.id, newPkg)
+        } catch (error: any) {
+            setPackages(prev => prev.filter(p => p.id !== newPkg.id));
+            toast.error("Failed to add package to database.");
+        }
     }, [])
 
     const deletePackage = useCallback(async (id: string) => {
         const pkg = packages.find((p) => p.id === id)
+        const oldPackages = [...packages];
         setPackages(prev => prev.filter(p => p.id !== id))
-        if (pkg?.image) await deleteImage(pkg.image)
-        removeDoc(COLLECTIONS.packages, id)
+        try {
+            if (pkg?.image) await deleteImage(pkg.image)
+            await removeDoc(COLLECTIONS.packages, id)
+        } catch (error: any) {
+            setPackages(oldPackages);
+            toast.error("Failed to delete package.");
+        }
     }, [packages])
 
     // ── Category actions ─────────────────────────────────────────
-    const updateCategory = useCallback((updatedCat: PackageCategory) => {
+    const updateCategory = useCallback(async (updatedCat: PackageCategory) => {
+        const oldCategories = [...categories];
         setCategories(prev => prev.map(c => c.id === updatedCat.id ? updatedCat : c))
-        upsertDoc(COLLECTIONS.categories, updatedCat.id, updatedCat)
-    }, [])
+        try {
+            await upsertDoc(COLLECTIONS.categories, updatedCat.id, updatedCat)
+        } catch (error: any) {
+            setCategories(oldCategories);
+            toast.error("Failed to save category card.");
+        }
+    }, [categories])
 
-    const addCategory = useCallback((newCat: PackageCategory) => {
+    const addCategory = useCallback(async (newCat: PackageCategory) => {
         setCategories(prev => [newCat, ...prev])
-        upsertDoc(COLLECTIONS.categories, newCat.id, newCat)
+        try {
+            await upsertDoc(COLLECTIONS.categories, newCat.id, newCat)
+        } catch (error: any) {
+            setCategories(prev => prev.filter(c => c.id !== newCat.id));
+            toast.error("Failed to add category.");
+        }
     }, [])
 
     const deleteCategory = useCallback(async (id: string) => {
         const cat = categories.find((c) => c.id === id)
+        const oldCategories = [...categories];
         setCategories(prev => prev.filter(c => c.id !== id))
-        if (cat?.image) await deleteImage(cat.image)
-        removeDoc(COLLECTIONS.categories, id)
+        try {
+            if (cat?.image) await deleteImage(cat.image)
+            await removeDoc(COLLECTIONS.categories, id)
+        } catch (error: any) {
+            setCategories(oldCategories);
+            toast.error("Failed to delete category.");
+        }
     }, [categories])
 
     // ── Hotel actions ────────────────────────────────────────────
