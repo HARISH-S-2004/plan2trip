@@ -4,7 +4,7 @@ import { useState } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { toast } from "sonner"
-import { supabase } from "@/lib/supabase"
+import { replaceImage, uploadImage } from "@/lib/firestore-service"
 import {
     Plus,
     Pencil,
@@ -100,12 +100,11 @@ export default function AdminHotelsPage() {
     async function uploadFile(file: File, folder: string = "hotels"): Promise<string | null> {
         setUploading(true)
         try {
-            const fileName = `${Date.now()}-${file.name.replace(/\s+/g, "-")}`
-            const filePath = `${folder}/${fileName}`
-            const { error } = await supabase.storage.from('uploads').upload(filePath, file)
-            if (error) throw error
-            const { data: { publicUrl } } = supabase.storage.from('uploads').getPublicUrl(filePath)
-            return publicUrl
+            const oldUrl = editTarget?.image || form.image
+            const url = oldUrl
+                ? await replaceImage(file, folder, oldUrl)
+                : await uploadImage(file, folder)
+            return url
         } catch (error: any) {
             console.error("Hotel Upload error:", error)
             toast.error(`Upload failed: ${error.message || "Unknown error"}`)
@@ -239,54 +238,39 @@ export default function AdminHotelsPage() {
                         Manage your hotel listings, rooms, and availability.
                     </p>
                 </div>
-                <div className="flex gap-2">
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                            if (confirm("Reset hotels data to default?")) {
-                                localStorage.removeItem("p2t_hotels");
-                                window.location.reload();
-                            }
-                        }}
-                        className="text-destructive border-destructive/20 h-9"
-                    >
-                        Reset Data
-                    </Button>
-                    <Dialog open={addOpen} onOpenChange={(open) => { setAddOpen(open); if (!open) resetForm(); }}>
-                        <DialogTrigger asChild>
-                            <Button className="bg-primary text-primary-foreground hover:bg-primary/90">
-                                <Plus className="mr-2 h-4 w-4" />
-                                Add Hotel
+                <Dialog open={addOpen} onOpenChange={(open) => { setAddOpen(open); if (!open) resetForm(); }}>
+                    <DialogTrigger asChild>
+                        <Button className="bg-primary text-primary-foreground hover:bg-primary/90">
+                            <Plus className="mr-2 h-4 w-4" />
+                            Add Hotel
+                        </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl p-6 sm:p-10">
+                        <DialogHeader className="mb-6">
+                            <DialogTitle className="text-2xl font-bold font-playfair">Add New Hotel</DialogTitle>
+                            <DialogDescription>
+                                Fill in the details to create a new luxury hotel listing.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <HotelFormContent
+                            form={form}
+                            setForm={setForm}
+                            fileInputRef={fileInputRef}
+                            handleFileChange={handleFileChange}
+                            handleRoomFileChange={handleRoomFileChange}
+                            addRoom={addRoom}
+                            updateRoom={updateRoom}
+                            removeRoom={removeRoom}
+                            uploading={uploading}
+                        />
+                        <DialogFooter className="mt-8">
+                            <Button variant="outline" onClick={() => setAddOpen(false)} className="rounded-xl px-8">Cancel</Button>
+                            <Button className="bg-primary text-primary-foreground hover:bg-gold hover:text-gold-foreground rounded-xl px-8 font-bold" onClick={handleAddHotel}>
+                                Create Hotel Listing
                             </Button>
-                        </DialogTrigger>
-                        <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl p-6 sm:p-10">
-                            <DialogHeader className="mb-6">
-                                <DialogTitle className="text-2xl font-bold font-playfair">Add New Hotel</DialogTitle>
-                                <DialogDescription>
-                                    Fill in the details to create a new luxury hotel listing.
-                                </DialogDescription>
-                            </DialogHeader>
-                            <HotelFormContent
-                                form={form}
-                                setForm={setForm}
-                                fileInputRef={fileInputRef}
-                                handleFileChange={handleFileChange}
-                                handleRoomFileChange={handleRoomFileChange}
-                                addRoom={addRoom}
-                                updateRoom={updateRoom}
-                                removeRoom={removeRoom}
-                                uploading={uploading}
-                            />
-                            <DialogFooter className="mt-8">
-                                <Button variant="outline" onClick={() => setAddOpen(false)} className="rounded-xl px-8">Cancel</Button>
-                                <Button className="bg-primary text-primary-foreground hover:bg-gold hover:text-gold-foreground rounded-xl px-8 font-bold" onClick={handleAddHotel}>
-                                    Create Hotel Listing
-                                </Button>
-                            </DialogFooter>
-                        </DialogContent>
-                    </Dialog>
-                </div>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
             </div>
 
             {/* Search */}

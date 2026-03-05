@@ -1,10 +1,23 @@
 "use client"
 
-import React, { createContext, useContext, useState, useEffect, useCallback } from "react"
-import { TourPackage, Hotel, Villa, Booking, Advertisement, Testimonial, FooterData, PackageCategory, packages as initialPackages, hotels as initialHotels, villas as initialVillas, ads as initialAds, initialBookings, testimonials as initialTestimonials, initialFooterData, initialCategories } from "@/lib/data"
-import { adminUsers as initialUsers, adminBookings as adminDataBookings } from "@/lib/admin-data"
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from "react"
+import {
+    TourPackage, Hotel, Villa, Booking, Advertisement, Testimonial,
+    FooterData, PackageCategory,
+    packages as initialPackages, hotels as initialHotels,
+    villas as initialVillas, ads as initialAds, initialBookings,
+    testimonials as initialTestimonials, initialFooterData, initialCategories,
+} from "@/lib/data"
+import { adminUsers as initialUsers } from "@/lib/admin-data"
+import {
+    COLLECTIONS,
+    upsertDoc, removeDoc,
+    subscribeCollection, subscribeDoc,
+    seedCollectionIfEmpty, seedDocIfEmpty,
+    deleteImage,
+} from "@/lib/firestore-service"
 
-// Helper to convert adminBookings to internal Payment format
+// Helper initial payments
 const initialPayments = [
     { id: "PAY-001", bookingId: "BK-001", customer: "Sarah Mitchell", amount: 2598, method: "Credit Card", status: "Completed", date: "2026-02-20" },
     { id: "PAY-002", bookingId: "BK-002", customer: "James Chen", amount: 3798, method: "PayPal", status: "Pending", date: "2026-02-22" },
@@ -13,6 +26,16 @@ const initialPayments = [
     { id: "PAY-005", bookingId: "BK-005", customer: "Emily Davis", amount: 7497, method: "Credit Card", status: "Pending", date: "2026-02-24" },
     { id: "PAY-006", bookingId: "BK-006", customer: "David Wilson", amount: 4398, method: "Credit Card", status: "Completed", date: "2026-02-10" },
 ]
+
+const defaultSettings = {
+    siteName: "Plan2Trip",
+    contactEmail: "support@plan2trip.com",
+    currency: "inr",
+    timezone: "ist",
+    emailNotifications: true,
+    bookingAlerts: true,
+    maintenanceMode: false,
+}
 
 interface DataContextType {
     packages: TourPackage[]
@@ -56,58 +79,13 @@ interface DataContextType {
     updateFooter: (data: FooterData) => void
     settings: any
     updateSettings: (settings: any) => void
+    loading: boolean
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined)
 
-const KEYS = {
-    packages: "p2t_packages",
-    hotels: "p2t_hotels",
-    villas: "p2t_villas",
-    ads: "p2t_ads",
-    bookings: "p2t_bookings",
-    testimonials: "p2t_testimonials",
-    footer: "p2t_footer",
-    users: "p2t_users",
-    payments: "p2t_payments",
-    categories: "p2t_categories",
-    settings: "p2t_admin_settings",
-}
-
-const defaultSettings = {
-    siteName: "Plan2Trip",
-    contactEmail: "support@plan2trip.com",
-    currency: "inr",
-    timezone: "ist",
-    emailNotifications: true,
-    bookingAlerts: true,
-    maintenanceMode: false,
-}
-
-function loadFromStorage<T>(key: string, fallback: T): T {
-    try {
-        if (typeof window === 'undefined') return fallback
-        const raw = localStorage.getItem(key)
-        return raw ? JSON.parse(raw) : fallback
-    } catch {
-        return fallback
-    }
-}
-
-function saveToStorage(key: string, value: any) {
-    try {
-        if (typeof window === 'undefined') return
-        localStorage.setItem(key, JSON.stringify(value))
-    } catch (e: any) {
-        if (e.name === 'QuotaExceededError' || e.name === 'NS_ERROR_DOM_QUOTA_REACHED') {
-            console.warn("Storage quota reached. Further changes won't be saved until space is cleared.")
-        }
-    }
-}
-
 export function DataProvider({ children }: { children: React.ReactNode }) {
-    const [mounted, setMounted] = useState(false)
-    const [hasLoaded, setHasLoaded] = useState(false)
+    const [loading, setLoading] = useState(true)
     const [packages, setPackages] = useState<TourPackage[]>(initialPackages)
     const [hotels, setHotels] = useState<Hotel[]>(initialHotels)
     const [villas, setVillas] = useState<Villa[]>(initialVillas)
@@ -120,155 +98,225 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     const [categories, setCategories] = useState<PackageCategory[]>(initialCategories)
     const [settings, setSettings] = useState(defaultSettings)
 
-    // Set mounted to true on client
+    const seeded = useRef(false)
+
+    // ── Seed initial data on first load, then subscribe to real-time updates ──
     useEffect(() => {
-        setMounted(true)
-    }, [])
+        let unsubscribes: (() => void)[] = []
 
-    // Load from localStorage on mount
-    useEffect(() => {
-        const storedPackages = loadFromStorage(KEYS.packages, initialPackages)
-        // Auto-fix empty itineraries or categories if they exist in initialPackages
-        const fixedPackages = storedPackages.map(pkg => {
-            const initial = initialPackages.find(p => p.id === pkg.id)
-            if (initial) {
-                let updated = { ...pkg }
-                let modified = false
-
-                if ((!pkg.itinerary || pkg.itinerary.length === 0) && initial.itinerary.length > 0) {
-                    updated.itinerary = initial.itinerary
-                    modified = true
+        async function init() {
+            // Seed collections if they are empty (first-time only)
+            if (!seeded.current) {
+                seeded.current = true
+                try {
+                    await Promise.all([
+                        seedCollectionIfEmpty(COLLECTIONS.packages, initialPackages),
+                        seedCollectionIfEmpty(COLLECTIONS.hotels, initialHotels),
+                        seedCollectionIfEmpty(COLLECTIONS.villas, initialVillas),
+                        seedCollectionIfEmpty(COLLECTIONS.ads, initialAds),
+                        seedCollectionIfEmpty(COLLECTIONS.bookings, initialBookings),
+                        seedCollectionIfEmpty(COLLECTIONS.testimonials, initialTestimonials),
+                        seedCollectionIfEmpty(COLLECTIONS.users, initialUsers),
+                        seedCollectionIfEmpty(COLLECTIONS.payments, initialPayments),
+                        seedCollectionIfEmpty(COLLECTIONS.categories, initialCategories),
+                        seedDocIfEmpty(COLLECTIONS.footer, "footer", initialFooterData),
+                        seedDocIfEmpty(COLLECTIONS.settings, "settings", defaultSettings),
+                    ])
+                } catch (err) {
+                    console.error("Firestore seed error:", err)
                 }
-
-                if (!pkg.category && initial.category) {
-                    updated.category = initial.category
-                    modified = true
-                }
-
-                return modified ? updated : pkg
             }
-            return pkg
-        })
 
-        setPackages(fixedPackages)
-        setHotels(loadFromStorage(KEYS.hotels, initialHotels))
-        setVillas(loadFromStorage(KEYS.villas, initialVillas))
-        setAds(loadFromStorage(KEYS.ads, initialAds))
-        setBookings(loadFromStorage(KEYS.bookings, initialBookings))
-        setTestimonials(loadFromStorage(KEYS.testimonials, initialTestimonials))
-        setFooterData(loadFromStorage(KEYS.footer, initialFooterData))
-        setUsers(loadFromStorage(KEYS.users, initialUsers))
-        setPayments(loadFromStorage(KEYS.payments, initialPayments))
-        setCategories(loadFromStorage(KEYS.categories, initialCategories))
-        setSettings(loadFromStorage(KEYS.settings, defaultSettings))
-        setHasLoaded(true)
-    }, [])
+            // Subscribe to all collections for real-time sync
+            unsubscribes = [
+                subscribeCollection<TourPackage>(COLLECTIONS.packages, setPackages),
+                subscribeCollection<Hotel>(COLLECTIONS.hotels, setHotels),
+                subscribeCollection<Villa>(COLLECTIONS.villas, setVillas),
+                subscribeCollection<Advertisement>(COLLECTIONS.ads, setAds),
+                subscribeCollection<Booking>(COLLECTIONS.bookings, setBookings),
+                subscribeCollection<Testimonial>(COLLECTIONS.testimonials, setTestimonials),
+                subscribeCollection<any>(COLLECTIONS.users, setUsers),
+                subscribeCollection<any>(COLLECTIONS.payments, setPayments),
+                subscribeCollection<PackageCategory>(COLLECTIONS.categories, setCategories),
+                subscribeDoc<FooterData>(COLLECTIONS.footer, "footer", (data) => {
+                    if (data) setFooterData(data)
+                }),
+                subscribeDoc<any>(COLLECTIONS.settings, "settings", (data) => {
+                    if (data) setSettings(data)
+                }),
+            ]
 
-    // Cross-tab sync: listen for localStorage changes made in OTHER tabs
-    useEffect(() => {
-        const handleStorageChange = (e: StorageEvent) => {
-            if (e.key === KEYS.packages) setPackages(e.newValue ? JSON.parse(e.newValue) : initialPackages)
-            if (e.key === KEYS.hotels) setHotels(e.newValue ? JSON.parse(e.newValue) : initialHotels)
-            if (e.key === KEYS.villas) setVillas(e.newValue ? JSON.parse(e.newValue) : initialVillas)
-            if (e.key === KEYS.ads) setAds(e.newValue ? JSON.parse(e.newValue) : initialAds)
-            if (e.key === KEYS.bookings) setBookings(e.newValue ? JSON.parse(e.newValue) : initialBookings)
-            if (e.key === KEYS.testimonials) setTestimonials(e.newValue ? JSON.parse(e.newValue) : initialTestimonials)
-            if (e.key === KEYS.footer) setFooterData(e.newValue ? JSON.parse(e.newValue) : initialFooterData)
-            if (e.key === KEYS.users) setUsers(e.newValue ? JSON.parse(e.newValue) : initialUsers)
-            if (e.key === KEYS.payments) setPayments(e.newValue ? JSON.parse(e.newValue) : initialPayments)
-            if (e.key === KEYS.categories) setCategories(e.newValue ? JSON.parse(e.newValue) : initialCategories)
-            if (e.key === KEYS.settings) setSettings(e.newValue ? JSON.parse(e.newValue) : defaultSettings)
+            setLoading(false)
         }
-        window.addEventListener("storage", handleStorageChange)
-        return () => window.removeEventListener("storage", handleStorageChange)
+
+        init()
+
+        return () => {
+            unsubscribes.forEach((unsub) => unsub())
+        }
     }, [])
 
-    // Save to localStorage when state changes
-    useEffect(() => { if (mounted && hasLoaded) saveToStorage(KEYS.packages, packages) }, [packages, mounted, hasLoaded])
-    useEffect(() => { if (mounted && hasLoaded) saveToStorage(KEYS.hotels, hotels) }, [hotels, mounted, hasLoaded])
-    useEffect(() => { if (mounted && hasLoaded) saveToStorage(KEYS.villas, villas) }, [villas, mounted, hasLoaded])
-    useEffect(() => { if (mounted && hasLoaded) saveToStorage(KEYS.ads, ads) }, [ads, mounted, hasLoaded])
-    useEffect(() => { if (mounted && hasLoaded) saveToStorage(KEYS.bookings, bookings) }, [bookings, mounted, hasLoaded])
-    useEffect(() => { if (mounted && hasLoaded) saveToStorage(KEYS.testimonials, testimonials) }, [testimonials, mounted, hasLoaded])
-    useEffect(() => { if (mounted && hasLoaded) saveToStorage(KEYS.footer, footerData) }, [footerData, mounted, hasLoaded])
-    useEffect(() => { if (mounted && hasLoaded) saveToStorage(KEYS.users, users) }, [users, mounted, hasLoaded])
-    useEffect(() => { if (mounted && hasLoaded) saveToStorage(KEYS.payments, payments) }, [payments, mounted, hasLoaded])
-    useEffect(() => { if (mounted && hasLoaded) saveToStorage(KEYS.categories, categories) }, [categories, mounted, hasLoaded])
-    useEffect(() => { if (mounted && hasLoaded) saveToStorage(KEYS.settings, settings) }, [settings, mounted, hasLoaded])
-
-    // --- Settings actions ---
-    const updateSettings = useCallback((newSettings: any) => { setSettings(newSettings) }, [])
-
-    // --- Package actions ---
+    // ── Package actions ──────────────────────────────────────────
     const updatePackage = useCallback((updatedPkg: TourPackage) => {
-        setPackages(prev => prev.map(p => p.id === updatedPkg.id ? updatedPkg : p))
+        upsertDoc(COLLECTIONS.packages, updatedPkg.id, updatedPkg)
     }, [])
-    const addPackage = useCallback((newPkg: TourPackage) => { setPackages(prev => [newPkg, ...prev]) }, [])
-    const deletePackage = useCallback((id: string) => { setPackages(prev => prev.filter(p => p.id !== id)) }, [])
 
-    // --- Category actions ---
+    const addPackage = useCallback((newPkg: TourPackage) => {
+        upsertDoc(COLLECTIONS.packages, newPkg.id, newPkg)
+    }, [])
+
+    const deletePackage = useCallback(async (id: string) => {
+        // Find and delete the image from storage
+        const pkg = packages.find((p) => p.id === id)
+        if (pkg?.image) await deleteImage(pkg.image)
+        removeDoc(COLLECTIONS.packages, id)
+    }, [packages])
+
+    // ── Category actions ─────────────────────────────────────────
     const updateCategory = useCallback((updatedCat: PackageCategory) => {
-        setCategories(prev => prev.map(c => c.id === updatedCat.id ? updatedCat : c))
+        upsertDoc(COLLECTIONS.categories, updatedCat.id, updatedCat)
     }, [])
-    const addCategory = useCallback((newCat: PackageCategory) => { setCategories(prev => [...prev, newCat]) }, [])
-    const deleteCategory = useCallback((id: string) => { setCategories(prev => prev.filter(c => c.id !== id)) }, [])
 
-    // --- Hotel actions ---
+    const addCategory = useCallback((newCat: PackageCategory) => {
+        upsertDoc(COLLECTIONS.categories, newCat.id, newCat)
+    }, [])
+
+    const deleteCategory = useCallback(async (id: string) => {
+        const cat = categories.find((c) => c.id === id)
+        if (cat?.image) await deleteImage(cat.image)
+        removeDoc(COLLECTIONS.categories, id)
+    }, [categories])
+
+    // ── Hotel actions ────────────────────────────────────────────
     const updateHotel = useCallback((updatedHotel: Hotel) => {
-        setHotels(prev => prev.map(h => h.id === updatedHotel.id ? updatedHotel : h))
+        upsertDoc(COLLECTIONS.hotels, updatedHotel.id, updatedHotel)
     }, [])
-    const addHotel = useCallback((newHotel: Hotel) => { setHotels(prev => [newHotel, ...prev]) }, [])
-    const deleteHotel = useCallback((id: string) => { setHotels(prev => prev.filter(h => h.id !== id)) }, [])
 
-    // --- Villa actions ---
+    const addHotel = useCallback((newHotel: Hotel) => {
+        upsertDoc(COLLECTIONS.hotels, newHotel.id, newHotel)
+    }, [])
+
+    const deleteHotel = useCallback(async (id: string) => {
+        const hotel = hotels.find((h) => h.id === id)
+        if (hotel?.image) await deleteImage(hotel.image)
+        // Also delete room images
+        if (hotel?.rooms) {
+            for (const room of hotel.rooms) {
+                if (room.image) await deleteImage(room.image)
+            }
+        }
+        removeDoc(COLLECTIONS.hotels, id)
+    }, [hotels])
+
+    // ── Villa actions ────────────────────────────────────────────
     const updateVilla = useCallback((updatedVilla: Villa) => {
-        setVillas(prev => prev.map(v => v.id === updatedVilla.id ? updatedVilla : v))
+        upsertDoc(COLLECTIONS.villas, updatedVilla.id, updatedVilla)
     }, [])
-    const addVilla = useCallback((newVilla: Villa) => { setVillas(prev => [newVilla, ...prev]) }, [])
-    const deleteVilla = useCallback((id: string) => { setVillas(prev => prev.filter(v => v.id !== id)) }, [])
 
-    // --- Ad actions ---
+    const addVilla = useCallback((newVilla: Villa) => {
+        upsertDoc(COLLECTIONS.villas, newVilla.id, newVilla)
+    }, [])
+
+    const deleteVilla = useCallback(async (id: string) => {
+        const villa = villas.find((v) => v.id === id)
+        if (villa?.image) await deleteImage(villa.image)
+        if (villa?.rooms) {
+            for (const room of villa.rooms) {
+                if (room.image) await deleteImage(room.image)
+            }
+        }
+        removeDoc(COLLECTIONS.villas, id)
+    }, [villas])
+
+    // ── Ad actions ───────────────────────────────────────────────
     const updateAd = useCallback((updatedAd: Advertisement) => {
-        setAds(prev => prev.map(a => a.id === updatedAd.id ? updatedAd : a))
+        upsertDoc(COLLECTIONS.ads, updatedAd.id, updatedAd)
     }, [])
-    const addAd = useCallback((newAd: Advertisement) => { setAds(prev => [newAd, ...prev]) }, [])
-    const deleteAd = useCallback((id: string) => { setAds(prev => prev.filter(a => a.id !== id)) }, [])
 
-    // --- Booking actions ---
-    const addBooking = useCallback((newBooking: Booking) => { setBookings(prev => [newBooking, ...prev]) }, [])
-    const deleteBooking = useCallback((id: string) => { setBookings(prev => prev.filter(b => b.id !== id)) }, [])
+    const addAd = useCallback((newAd: Advertisement) => {
+        upsertDoc(COLLECTIONS.ads, newAd.id, newAd)
+    }, [])
+
+    const deleteAd = useCallback(async (id: string) => {
+        const ad = ads.find((a) => a.id === id)
+        if (ad?.image) await deleteImage(ad.image)
+        removeDoc(COLLECTIONS.ads, id)
+    }, [ads])
+
+    // ── Booking actions ──────────────────────────────────────────
+    const addBooking = useCallback((newBooking: Booking) => {
+        upsertDoc(COLLECTIONS.bookings, newBooking.id, newBooking)
+    }, [])
+
+    const deleteBooking = useCallback((id: string) => {
+        removeDoc(COLLECTIONS.bookings, id)
+    }, [])
+
     const updateBookingStatus = useCallback((id: string, status: "Confirmed" | "Pending" | "Cancelled") => {
-        setBookings(prev => prev.map(b => b.id === id ? { ...b, status } : b))
+        const booking = bookings.find((b) => b.id === id)
+        if (booking) {
+            upsertDoc(COLLECTIONS.bookings, id, { ...booking, status })
+        }
+    }, [bookings])
+
+    // ── User actions ─────────────────────────────────────────────
+    const deleteUser = useCallback((id: string) => {
+        removeDoc(COLLECTIONS.users, id)
     }, [])
 
-    // --- User actions ---
-    const deleteUser = useCallback((id: string) => { setUsers(prev => prev.filter(u => u.id !== id)) }, [])
     const updateUserRole = useCallback((id: string, role: string) => {
-        setUsers(prev => prev.map(u => u.id === id ? { ...u, role } : u))
-    }, [])
+        const user = users.find((u) => u.id === id)
+        if (user) {
+            upsertDoc(COLLECTIONS.users, id, { ...user, role })
+        }
+    }, [users])
+
     const toggleUserBlock = useCallback((id: string) => {
-        setUsers(prev => prev.map(u => u.id === id ? { ...u, blocked: !u.blocked } : u))
-    }, [])
+        const user = users.find((u) => u.id === id)
+        if (user) {
+            upsertDoc(COLLECTIONS.users, id, { ...user, blocked: !user.blocked })
+        }
+    }, [users])
+
     const addUser = useCallback((newUser: any) => {
-        setUsers(prev => [...prev, newUser])
+        upsertDoc(COLLECTIONS.users, newUser.id, newUser)
     }, [])
 
-    // --- Payment actions ---
-    const addPayment = useCallback((newPayment: any) => { setPayments(prev => [newPayment, ...prev]) }, [])
+    // ── Payment actions ──────────────────────────────────────────
+    const addPayment = useCallback((newPayment: any) => {
+        upsertDoc(COLLECTIONS.payments, newPayment.id, newPayment)
+    }, [])
+
     const updatePayment = useCallback((updatedPayment: any) => {
-        setPayments(prev => prev.map(p => p.id === updatedPayment.id ? updatedPayment : p))
+        upsertDoc(COLLECTIONS.payments, updatedPayment.id, updatedPayment)
     }, [])
-    const deletePayment = useCallback((id: string) => { setPayments(prev => prev.filter(p => p.id !== id)) }, [])
 
-    // --- Testimonial actions ---
+    const deletePayment = useCallback((id: string) => {
+        removeDoc(COLLECTIONS.payments, id)
+    }, [])
+
+    // ── Testimonial actions ──────────────────────────────────────
     const updateTestimonial = useCallback((updatedTestimonial: Testimonial) => {
-        setTestimonials(prev => prev.map(t => t.id === updatedTestimonial.id ? updatedTestimonial : t))
+        upsertDoc(COLLECTIONS.testimonials, updatedTestimonial.id, updatedTestimonial)
     }, [])
-    const addTestimonial = useCallback((newTestimonial: Testimonial) => { setTestimonials(prev => [newTestimonial, ...prev]) }, [])
-    const deleteTestimonial = useCallback((id: string) => { setTestimonials(prev => prev.filter(t => t.id !== id)) }, [])
 
-    // --- Footer actions ---
-    const updateFooter = useCallback((data: FooterData) => { setFooterData(data) }, [])
+    const addTestimonial = useCallback((newTestimonial: Testimonial) => {
+        upsertDoc(COLLECTIONS.testimonials, newTestimonial.id, newTestimonial)
+    }, [])
+
+    const deleteTestimonial = useCallback((id: string) => {
+        removeDoc(COLLECTIONS.testimonials, id)
+    }, [])
+
+    // ── Footer actions ───────────────────────────────────────────
+    const updateFooter = useCallback((data: FooterData) => {
+        upsertDoc(COLLECTIONS.footer, "footer", data)
+    }, [])
+
+    // ── Settings actions ─────────────────────────────────────────
+    const updateSettings = useCallback((newSettings: any) => {
+        upsertDoc(COLLECTIONS.settings, "settings", newSettings)
+    }, [])
 
     return (
         <DataContext.Provider
@@ -314,9 +362,10 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
                 updateFooter,
                 settings,
                 updateSettings,
+                loading,
             }}
         >
-            {mounted ? children : <div className="min-h-screen bg-background" />}
+            {loading ? <div className="min-h-screen bg-background" /> : children}
         </DataContext.Provider>
     )
 }

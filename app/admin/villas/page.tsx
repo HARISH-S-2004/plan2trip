@@ -3,7 +3,7 @@
 import { useState } from "react"
 import Image from "next/image"
 import { toast } from "sonner"
-import { supabase } from "@/lib/supabase"
+import { replaceImage, uploadImage } from "@/lib/firestore-service"
 import {
     Plus,
     Pencil,
@@ -101,12 +101,11 @@ export default function AdminVillasPage() {
     async function uploadFile(file: File, folder: string = "villas"): Promise<string | null> {
         setUploading(true)
         try {
-            const fileName = `${Date.now()}-${file.name.replace(/\s+/g, "-")}`
-            const filePath = `${folder}/${fileName}`
-            const { error } = await supabase.storage.from('uploads').upload(filePath, file)
-            if (error) throw error
-            const { data: { publicUrl } } = supabase.storage.from('uploads').getPublicUrl(filePath)
-            return publicUrl
+            const oldUrl = editTarget?.image || form.image
+            const url = oldUrl
+                ? await replaceImage(file, folder, oldUrl)
+                : await uploadImage(file, folder)
+            return url
         } catch (error: any) {
             console.error("Villa Upload error:", error)
             toast.error(`Upload failed: ${error.message || "Unknown error"}`)
