@@ -129,11 +129,11 @@ export default function AdminPackagesPage() {
   async function uploadFile(file: File, folder: string = "packages", customOldUrl?: string): Promise<string | null> {
     setUploading(true)
 
-    // Safety timeout: reset "uploading" state after 10 seconds if it hangs
+    // Safety timeout: reset "uploading" state after 30 seconds if it hangs (slow connections)
     const timeoutId = setTimeout(() => {
       setUploading(false)
       console.warn("Upload timed out - resetting state.")
-    }, 10000)
+    }, 30000)
 
     try {
       const oldUrl = customOldUrl || editTarget?.image || form.image
@@ -326,18 +326,45 @@ export default function AdminPackagesPage() {
             Manage your tour packages and home page categories.
           </p>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => {
-            if (confirm("This will refresh your local view and attempt to re-sync with Firestore. Continue?")) {
-              window.location.reload();
-            }
-          }}
-          className="text-primary hover:bg-primary/10 border-primary/20 text-[10px] font-bold uppercase tracking-widest h-7"
-        >
-          Refresh Data
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              if (confirm("This will refresh your local view and attempt to re-sync with Firestore. Continue?")) {
+                window.location.reload();
+              }
+            }}
+            className="text-primary hover:bg-primary/10 border-primary/20 text-[10px] font-bold uppercase tracking-widest h-9 px-4 rounded-xl"
+          >
+            Refresh Data
+          </Button>
+          <Button
+            className="bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4 rounded-xl shadow-lg shadow-primary/20"
+            onClick={() => {
+              setForm({
+                title: "",
+                destination: "",
+                duration: "",
+                price: "",
+                description: "",
+                image: "",
+                highlights: "",
+                inclusions: "",
+                exclusions: "",
+                category: "",
+                isPopular: false,
+                itinerary: [],
+              })
+              setFormStatus("Active")
+              setAddOpen(true)
+            }}
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            <span className="hidden sm:inline">Add Package</span>
+            <span className="sm:hidden text-xs">New</span>
+          </Button>
+        </div>
       </div>
 
       <Tabs defaultValue="packages" className="w-full">
@@ -348,156 +375,130 @@ export default function AdminPackagesPage() {
         </TabsList>
 
         <TabsContent value="packages" className="space-y-6 pt-6">
-          <div className="flex justify-end">
-            <Button
-              className="bg-primary text-primary-foreground hover:bg-primary/90"
-              onClick={() => {
-                setForm({
-                  title: "",
-                  destination: "",
-                  duration: "",
-                  price: "",
-                  description: "",
-                  image: "",
-                  highlights: "",
-                  inclusions: "",
-                  exclusions: "",
-                  category: "",
-                  isPopular: false,
-                  itinerary: [],
-                })
-                setFormStatus("Active")
-                setAddOpen(true)
-              }}
-            >
-              <Plus className="mr-2 h-4 w-4" />
-              Add Package
-            </Button>
-          </div>
 
-          <Card className="gap-0 py-0">
-            <CardContent className="p-4">
+          <Card className="gap-0 py-0 border-none shadow-sm bg-secondary/5">
+            <CardContent className="p-3 sm:p-4">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   placeholder="Search packages by title or destination..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="pl-9"
+                  className="pl-9 h-11 rounded-xl bg-background border-none shadow-sm"
                 />
               </div>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base font-semibold">
+          <Card className="border-none shadow-sm overflow-hidden rounded-2xl">
+            <CardHeader className="p-4 sm:p-6 pb-2">
+              <CardTitle className="text-lg sm:text-xl font-bold">
                 All Packages
-                <Badge variant="secondary" className="ml-2 font-normal">
+                <Badge variant="secondary" className="ml-2 font-black rounded-full px-2">
                   {filtered.length}
                 </Badge>
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-xs">
                 A list of all travel packages with their status and details.
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Package</TableHead>
-                    <TableHead className="hidden md:table-cell">Destination</TableHead>
-                    <TableHead className="hidden lg:table-cell">Duration</TableHead>
-                    <TableHead>Price</TableHead>
-                    <TableHead className="hidden sm:table-cell">Rating</TableHead>
-                    <TableHead className="hidden sm:table-cell">Bookings</TableHead>
-                    <TableHead className="text-center">Popular</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filtered.map((pkg) => (
-                    <TableRow key={pkg.id}>
-                      <TableCell>
-                        <div className="flex items-center gap-3">
-                          <div className="relative h-10 w-14 shrink-0 overflow-hidden rounded-md font-bold">
-                            <Image src={pkg.image} alt={pkg.title} fill unoptimized className="object-cover" />
-                          </div>
-                          <div>
-                            <p className="text-sm font-semibold text-foreground">{pkg.title}</p>
-                            <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-tight">{pkg.category || "No Category"}</p>
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell className="hidden text-muted-foreground md:table-cell font-medium">{pkg.destination}</TableCell>
-                      <TableCell className="hidden text-muted-foreground lg:table-cell font-medium">{pkg.duration}</TableCell>
-                      <TableCell className="font-bold text-foreground">₹{pkg.price.toLocaleString()}</TableCell>
-                      <TableCell className="hidden sm:table-cell">
-                        <div className="flex items-center gap-1 font-medium">
-                          <Star className="h-3.5 w-3.5 fill-gold text-gold" />
-                          <span className="text-sm text-muted-foreground">{pkg.rating}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="hidden text-muted-foreground sm:table-cell font-medium">{pkg.bookingsCount}</TableCell>
-                      <TableCell>
-                        <div className="flex justify-center">
-                          <Switch
-                            checked={!!pkg.isPopular}
-                            onCheckedChange={() => updatePackage({ ...pkg, isPopular: !pkg.isPopular })}
-                          />
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Switch
-                            checked={pkg.status === "Active"}
-                            onCheckedChange={() => toggleStatus(pkg)}
-                          />
-                          <Badge
-                            variant="outline"
-                            className={cn(
-                              "text-[10px] font-bold uppercase",
-                              pkg.status === "Active"
-                                ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-                                : "border-muted bg-muted text-muted-foreground"
-                            )}
-                          >
-                            {pkg.status}
-                          </Badge>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-1">
-                          <Link href={`/packages/${pkg.id}`} target="_blank">
-                            <Button variant="outline" size="sm" className="h-8 gap-1.5 text-xs font-semibold text-muted-foreground hover:text-primary rounded-lg border-primary/20">
-                              <ExternalLink className="h-3 w-3" />
-                              View
-                            </Button>
-                          </Link>
-                          <Button variant="outline" size="sm" onClick={() => openEdit(pkg)} className="h-8 gap-1.5 text-xs font-semibold text-muted-foreground hover:text-primary rounded-lg border-primary/20">
-                            <Pencil className="h-3 w-3" />
-                            Edit
-                          </Button>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full">
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="rounded-xl">
-                              <DropdownMenuItem variant="destructive" onClick={() => setDeleteTarget(pkg)} className="rounded-lg">
-                                <Trash2 className="mr-2 h-4 w-4" />
-                                Delete
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </div>
-                      </TableCell>
+            <CardContent className="p-0 sm:p-6">
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="border-none bg-muted/30">
+                      <TableHead className="px-4 py-3 font-bold text-foreground">Package</TableHead>
+                      <TableHead className="hidden lg:table-cell py-3 font-bold text-foreground">Destination</TableHead>
+                      <TableHead className="hidden md:table-cell py-3 font-bold text-foreground">Duration</TableHead>
+                      <TableHead className="py-3 font-bold text-foreground">Price</TableHead>
+                      <TableHead className="hidden sm:table-cell py-3 font-bold text-foreground text-center">Rating</TableHead>
+                      <TableHead className="hidden sm:table-cell py-3 font-bold text-foreground text-center">Bookings</TableHead>
+                      <TableHead className="text-center py-3 font-bold text-foreground">Popular</TableHead>
+                      <TableHead className="py-3 font-bold text-foreground">Status</TableHead>
+                      <TableHead className="w-12 py-3 font-bold text-foreground text-right px-4">Actions</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {filtered.map((pkg) => (
+                      <TableRow key={pkg.id}>
+                        <TableCell>
+                          <div className="flex items-center gap-3">
+                            <div className="relative h-10 w-14 shrink-0 overflow-hidden rounded-md font-bold">
+                              <Image src={pkg.image} alt={pkg.title} fill unoptimized className="object-cover" />
+                            </div>
+                            <div>
+                              <p className="text-sm font-semibold text-foreground">{pkg.title}</p>
+                              <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-tight">{pkg.category || "No Category"}</p>
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell className="hidden lg:table-cell text-muted-foreground/70 text-xs font-medium">{pkg.destination}</TableCell>
+                        <TableCell className="hidden md:table-cell text-muted-foreground/70 text-xs font-medium">{pkg.duration}</TableCell>
+                        <TableCell className="font-bold text-foreground text-sm">₹{pkg.price.toLocaleString()}</TableCell>
+                        <TableCell className="hidden sm:table-cell text-center">
+                          <div className="flex items-center justify-center gap-1 font-medium">
+                            <Star className="h-3 w-3 fill-gold text-gold" />
+                            <span className="text-xs font-bold text-foreground/80">{pkg.rating}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="hidden sm:table-cell text-center text-muted-foreground font-bold">{pkg.bookingsCount}</TableCell>
+                        <TableCell>
+                          <div className="flex justify-center">
+                            <Switch
+                              checked={!!pkg.isPopular}
+                              onCheckedChange={() => updatePackage({ ...pkg, isPopular: !pkg.isPopular })}
+                            />
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <Switch
+                              checked={pkg.status === "Active"}
+                              onCheckedChange={() => toggleStatus(pkg)}
+                            />
+                            <Badge
+                              variant="outline"
+                              className={cn(
+                                "text-[10px] font-bold uppercase",
+                                pkg.status === "Active"
+                                  ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                                  : "border-muted bg-muted text-muted-foreground"
+                              )}
+                            >
+                              {pkg.status}
+                            </Badge>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-right px-4">
+                          <div className="flex items-center justify-end gap-1 sm:gap-2">
+                            <Link href={`/packages/${pkg.id}`} target="_blank" className="hidden sm:inline">
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary rounded-xl">
+                                <ExternalLink className="h-4 w-4" />
+                              </Button>
+                            </Link>
+                            <Button variant="ghost" size="icon" onClick={() => openEdit(pkg)} className="h-8 w-8 text-muted-foreground hover:text-primary rounded-xl">
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full">
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end" className="rounded-xl border-none shadow-xl">
+                                <DropdownMenuItem onClick={() => setDeleteTarget(pkg)} className="text-red-500 focus:text-red-500 focus:bg-red-50 rounded-lg">
+                                  <Trash2 className="mr-2 h-4 w-4" />
+                                  Delete
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>

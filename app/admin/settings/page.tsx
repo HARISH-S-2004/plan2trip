@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { Save, CheckCircle2 } from "lucide-react"
+import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -42,19 +43,19 @@ export default function AdminSettingsPage() {
       localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings))
       setSaved(true)
       setIsDirty(false)
-      // Reset the success indicator after 3 seconds
+      toast.success("Settings saved successfully!")
       setTimeout(() => setSaved(false), 3000)
     } catch {
-      // handle error
+      toast.error("Failed to save settings.")
     }
   }
 
   return (
     <div className="flex flex-col gap-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">
+          <h1 className="text-2xl font-bold tracking-tight text-foreground font-playfair">
             Settings
           </h1>
           <p className="text-sm text-muted-foreground">
@@ -62,7 +63,7 @@ export default function AdminSettingsPage() {
           </p>
         </div>
         {isDirty && (
-          <span className="text-xs text-amber-600 font-medium bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-full">
+          <span className="text-[10px] uppercase tracking-wider text-amber-600 font-black bg-amber-50 border border-amber-200 px-3 py-1 rounded-full w-fit">
             Unsaved changes
           </span>
         )}
@@ -70,41 +71,43 @@ export default function AdminSettingsPage() {
 
       <div className="grid gap-6 lg:grid-cols-2">
         {/* General Settings */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">General</CardTitle>
-            <CardDescription>
+        <Card className="border-none shadow-sm rounded-2xl">
+          <CardHeader className="p-4 sm:p-6">
+            <CardTitle className="text-lg font-bold">General</CardTitle>
+            <CardDescription className="text-xs">
               Basic platform configuration settings.
             </CardDescription>
           </CardHeader>
-          <CardContent className="flex flex-col gap-4">
+          <CardContent className="p-4 sm:p-6 pt-0 flex flex-col gap-4">
             <div className="grid gap-2">
-              <Label htmlFor="site-name">Site Name</Label>
+              <Label htmlFor="site-name" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Site Name</Label>
               <Input
                 id="site-name"
                 value={settings.siteName}
                 onChange={e => update("siteName", e.target.value)}
+                className="h-11 rounded-xl border-none bg-secondary/30"
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="contact-email">Contact Email</Label>
+              <Label htmlFor="contact-email" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Contact Email</Label>
               <Input
                 id="contact-email"
                 value={settings.contactEmail}
                 type="email"
                 onChange={e => update("contactEmail", e.target.value)}
+                className="h-11 rounded-xl border-none bg-secondary/30"
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="currency">Default Currency</Label>
+              <Label htmlFor="currency" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Default Currency</Label>
               <Select
                 value={settings.currency}
                 onValueChange={val => update("currency", val)}
               >
-                <SelectTrigger id="currency">
+                <SelectTrigger id="currency" className="h-11 rounded-xl border-none bg-secondary/30">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="rounded-xl border-none shadow-xl">
                   <SelectItem value="usd">USD ($)</SelectItem>
                   <SelectItem value="eur">EUR (€)</SelectItem>
                   <SelectItem value="gbp">GBP (£)</SelectItem>
@@ -113,15 +116,15 @@ export default function AdminSettingsPage() {
               </Select>
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="timezone">Timezone</Label>
+              <Label htmlFor="timezone" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Timezone</Label>
               <Select
                 value={settings.timezone}
                 onValueChange={val => update("timezone", val)}
               >
-                <SelectTrigger id="timezone">
+                <SelectTrigger id="timezone" className="h-11 rounded-xl border-none bg-secondary/30">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="rounded-xl border-none shadow-xl">
                   <SelectItem value="utc">UTC</SelectItem>
                   <SelectItem value="est">Eastern (EST)</SelectItem>
                   <SelectItem value="pst">Pacific (PST)</SelectItem>
@@ -133,20 +136,20 @@ export default function AdminSettingsPage() {
         </Card>
 
         {/* Notification Settings */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Notifications</CardTitle>
-            <CardDescription>
+        <Card className="border-none shadow-sm rounded-2xl">
+          <CardHeader className="p-4 sm:p-6">
+            <CardTitle className="text-lg font-bold">Notifications</CardTitle>
+            <CardDescription className="text-xs">
               Configure email and alert preferences.
             </CardDescription>
           </CardHeader>
-          <CardContent className="flex flex-col gap-5">
+          <CardContent className="p-4 sm:p-6 pt-0 flex flex-col gap-5">
             <div className="flex items-center justify-between">
               <div className="flex flex-col gap-0.5">
-                <Label className="text-sm font-medium">
+                <Label className="text-sm font-bold">
                   Email Notifications
                 </Label>
-                <span className="text-xs text-muted-foreground">
+                <span className="text-[10px] text-muted-foreground">
                   Receive email updates for important events.
                 </span>
               </div>
@@ -155,11 +158,11 @@ export default function AdminSettingsPage() {
                 onCheckedChange={val => update("emailNotifications", val)}
               />
             </div>
-            <Separator />
+            <Separator className="bg-secondary/50" />
             <div className="flex items-center justify-between">
               <div className="flex flex-col gap-0.5">
-                <Label className="text-sm font-medium">Booking Alerts</Label>
-                <span className="text-xs text-muted-foreground">
+                <Label className="text-sm font-bold">Booking Alerts</Label>
+                <span className="text-[10px] text-muted-foreground">
                   Get notified when a new booking is made.
                 </span>
               </div>
@@ -168,13 +171,13 @@ export default function AdminSettingsPage() {
                 onCheckedChange={val => update("bookingAlerts", val)}
               />
             </div>
-            <Separator />
+            <Separator className="bg-secondary/50" />
             <div className="flex items-center justify-between">
               <div className="flex flex-col gap-0.5">
-                <Label className="text-sm font-medium">
+                <Label className="text-sm font-bold">
                   Maintenance Mode
                 </Label>
-                <span className="text-xs text-muted-foreground">
+                <span className="text-[10px] text-muted-foreground">
                   Temporarily disable the public site for maintenance.
                 </span>
               </div>
@@ -188,15 +191,15 @@ export default function AdminSettingsPage() {
       </div>
 
       {/* Save Button */}
-      <div className="flex items-center justify-end gap-3">
+      <div className="flex flex-col sm:flex-row items-center justify-end gap-3 mt-4">
         {saved && (
-          <span className="flex items-center gap-1.5 text-sm font-medium text-emerald-600">
-            <CheckCircle2 className="h-4 w-4" />
+          <span className="flex items-center gap-1.5 text-xs font-bold text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-100">
+            <CheckCircle2 className="h-3.5 w-3.5" />
             Settings saved successfully!
           </span>
         )}
         <Button
-          className="bg-primary text-primary-foreground hover:bg-primary/90"
+          className="bg-primary text-primary-foreground hover:bg-primary/90 h-12 px-8 rounded-xl shadow-lg shadow-primary/20 w-full sm:w-auto"
           onClick={handleSave}
         >
           <Save className="mr-2 h-4 w-4" />

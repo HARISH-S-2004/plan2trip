@@ -116,73 +116,73 @@ export default function AdminUsersPage() {
   return (
     <div className="flex flex-col gap-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-foreground">
             Users
           </h1>
           <p className="text-sm text-muted-foreground">
-            Manage user accounts, roles, and access.
+            Manage roles and access control.
           </p>
         </div>
         <Button
-          className="rounded-xl shadow-lg shadow-primary/20 bg-primary text-primary-foreground"
+          className="rounded-xl shadow-lg shadow-primary/20 bg-primary text-primary-foreground h-11"
           onClick={() => setIsAddOpen(true)}
         >
           <Plus className="mr-2 h-4 w-4" />
-          Add User
+          Add New User
         </Button>
       </div>
 
       {/* Search */}
-      <Card className="gap-0 py-0">
-        <CardContent className="p-4">
+      <Card className="gap-0 py-0 border-none shadow-sm bg-secondary/5">
+        <CardContent className="p-3 sm:p-4">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
-              placeholder="Search by name, email, or ID..."
+              placeholder="Search by name or email..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-9"
+              className="pl-9 h-11 rounded-xl bg-background border-none shadow-sm"
             />
           </div>
         </CardContent>
       </Card>
 
       {/* Stats summary */}
-      <div className="grid gap-4 sm:grid-cols-3">
-        <Card className="gap-0 py-0">
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-3">
+        <Card className="gap-0 py-0 border-none shadow-sm bg-card/50">
           <CardContent className="flex items-center gap-3 p-4">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
               <UserCheck className="h-5 w-5 text-primary" />
             </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Total Users</p>
-              <p className="text-lg font-bold text-foreground">{users.length}</p>
+            <div className="min-w-0">
+              <p className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">Total Users</p>
+              <p className="text-lg font-black text-foreground">{users.length}</p>
             </div>
           </CardContent>
         </Card>
-        <Card className="gap-0 py-0">
+        <Card className="gap-0 py-0 border-none shadow-sm bg-card/50">
           <CardContent className="flex items-center gap-3 p-4">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gold/10">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gold/10">
               <ShieldCheck className="h-5 w-5 text-gold" />
             </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Admins</p>
-              <p className="text-lg font-bold text-foreground">
+            <div className="min-w-0">
+              <p className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">Admins</p>
+              <p className="text-lg font-black text-foreground">
                 {users.filter((u) => u.role === "Admin").length}
               </p>
             </div>
           </CardContent>
         </Card>
-        <Card className="gap-0 py-0">
+        <Card className="gap-0 py-0 border-none shadow-sm bg-card/50">
           <CardContent className="flex items-center gap-3 p-4">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-100">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-100">
               <Ban className="h-5 w-5 text-red-600" />
             </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Blocked</p>
-              <p className="text-lg font-bold text-foreground">
+            <div className="min-w-0">
+              <p className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">Blocked</p>
+              <p className="text-lg font-black text-foreground">
                 {users.filter((u) => u.blocked).length}
               </p>
             </div>
@@ -191,160 +191,156 @@ export default function AdminUsersPage() {
       </div>
 
       {/* Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">
-            User List
-            <Badge variant="secondary" className="ml-2">
+      <Card className="border-none shadow-sm overflow-hidden">
+        <CardHeader className="p-4 sm:p-6 pb-2">
+          <CardTitle className="text-lg sm:text-xl font-bold">
+            All Accounts
+            <Badge variant="secondary" className="ml-2 font-black rounded-full px-2">
               {filtered.length}
             </Badge>
           </CardTitle>
-          <CardDescription>
-            View user details, manage roles, and toggle account access.
+          <CardDescription className="text-xs">
+            Manage dashboard access and user permissions.
           </CardDescription>
         </CardHeader>
-        <CardContent className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>User</TableHead>
-                <TableHead className="hidden sm:table-cell">ID</TableHead>
-                <TableHead>Role</TableHead>
-                <TableHead className="hidden md:table-cell">Joined</TableHead>
-                <TableHead className="hidden lg:table-cell">
-                  Bookings
-                </TableHead>
-                <TableHead>Blocked</TableHead>
-                <TableHead className="w-12">
-                  <span className="sr-only">Actions</span>
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filtered.map((user) => (
-                <TableRow
-                  key={user.id}
-                  className={cn(user.blocked && "opacity-60")}
-                >
-                  <TableCell>
-                    <div className="flex items-center gap-3">
-                      <Avatar className="h-9 w-9">
-                        <AvatarFallback
-                          className={cn(
-                            "text-xs font-semibold",
-                            user.role === "Admin"
-                              ? "bg-gold/20 text-gold"
-                              : "bg-primary/10 text-primary"
-                          )}
-                        >
-                          {user.name
-                            .split(" ")
-                            .map((n: string) => n[0])
-                            .join("")}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex flex-col">
-                        <span className="text-sm font-medium text-foreground">
-                          {user.name}
-                        </span>
-                        <span className="text-xs text-muted-foreground">
-                          {user.email}
-                        </span>
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell className="hidden text-muted-foreground sm:table-cell">
-                    {user.id}
-                  </TableCell>
-                  <TableCell>
-                    <Badge
-                      variant="outline"
-                      className={cn(
-                        "text-xs",
-                        user.role === "Admin"
-                          ? "border-gold/30 bg-gold/10 text-gold"
-                          : "border-primary/20 bg-primary/5 text-primary"
-                      )}
-                    >
-                      {user.role === "Admin" && (
-                        <ShieldCheck className="mr-1 h-3 w-3" />
-                      )}
-                      {user.role}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="hidden text-muted-foreground md:table-cell">
-                    {new Date(user.joinedDate).toLocaleDateString("en-US", {
-                      month: "short",
-                      day: "numeric",
-                      year: "numeric",
-                    })}
-                  </TableCell>
-                  <TableCell className="hidden text-muted-foreground lg:table-cell">
-                    {user.bookingsCount}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Switch
-                        checked={user.blocked}
-                        onCheckedChange={() => toggleUserBlock(user.id)}
-                        aria-label={`Block ${user.name}`}
-                      />
-                      {user.blocked && (
-                        <span className="text-xs text-red-500">Blocked</span>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8"
-                          aria-label="User actions"
-                        >
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        {user.role === "User" && (
-                          <DropdownMenuItem
-                            onClick={() => setPromoteTarget(user)}
-                          >
-                            <ShieldCheck className="mr-2 h-4 w-4" />
-                            Promote to Admin
-                          </DropdownMenuItem>
-                        )}
-                        <DropdownMenuItem
-                          onClick={() => toggleUserBlock(user.id)}
-                        >
-                          <Ban className="mr-2 h-4 w-4" />
-                          {user.blocked ? "Unblock User" : "Block User"}
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          className="text-red-600 focus:bg-red-50 focus:text-red-700"
-                          onClick={() => setDeleteTarget(user)}
-                        >
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          Delete User
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
+        <CardContent className="p-0 sm:p-6">
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow className="border-none bg-muted/30">
+                  <TableHead className="px-4 py-3 font-bold text-foreground">User</TableHead>
+                  <TableHead className="hidden lg:table-cell py-3 font-bold text-foreground">ID</TableHead>
+                  <TableHead className="py-3 font-bold text-foreground">Role</TableHead>
+                  <TableHead className="hidden md:table-cell py-3 font-bold text-foreground">Joined</TableHead>
+                  <TableHead className="hidden sm:table-cell py-3 font-bold text-foreground text-center">Bookings</TableHead>
+                  <TableHead className="py-3 font-bold text-foreground">Status</TableHead>
+                  <TableHead className="w-12 py-3 font-bold text-foreground text-right px-4">Actions</TableHead>
                 </TableRow>
-              ))}
-              {filtered.length === 0 && (
-                <TableRow>
-                  <TableCell
-                    colSpan={7}
-                    className="h-24 text-center text-muted-foreground"
+              </TableHeader>
+              <TableBody>
+                {filtered.map((user) => (
+                  <TableRow
+                    key={user.id}
+                    className={cn(user.blocked && "opacity-60")}
                   >
-                    No users found.
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <Avatar className="h-9 w-9">
+                          <AvatarFallback
+                            className={cn(
+                              "text-xs font-semibold",
+                              user.role === "Admin"
+                                ? "bg-gold/20 text-gold"
+                                : "bg-primary/10 text-primary"
+                            )}
+                          >
+                            {user.name
+                              .split(" ")
+                              .map((n: string) => n[0])
+                              .join("")}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex flex-col">
+                          <span className="text-sm font-medium text-foreground">
+                            {user.name}
+                          </span>
+                          <span className="text-xs text-muted-foreground">
+                            {user.email}
+                          </span>
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell className="hidden lg:table-cell text-muted-foreground/70 text-xs">
+                      {user.id}
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        variant="outline"
+                        className={cn(
+                          "text-[10px] font-black uppercase tracking-tight px-2 py-0.5",
+                          user.role === "Admin"
+                            ? "border-gold/30 bg-gold/10 text-gold"
+                            : "border-primary/20 bg-primary/5 text-primary"
+                        )}
+                      >
+                        {user.role}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="hidden md:table-cell text-muted-foreground text-xs font-medium">
+                      {new Date(user.joinedDate).toLocaleDateString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                        year: "numeric",
+                      })}
+                    </TableCell>
+                    <TableCell className="hidden sm:table-cell text-center font-bold text-foreground/80">
+                      {user.bookingsCount}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <Switch
+                          checked={user.blocked}
+                          onCheckedChange={() => toggleUserBlock(user.id)}
+                          aria-label={`Block ${user.name}`}
+                          className="scale-75 sm:scale-90"
+                        />
+                        {user.blocked && (
+                          <span className="text-[10px] font-bold text-red-500 hidden sm:inline">Blocked</span>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                            aria-label="User actions"
+                          >
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          {user.role === "User" && (
+                            <DropdownMenuItem
+                              onClick={() => setPromoteTarget(user)}
+                            >
+                              <ShieldCheck className="mr-2 h-4 w-4" />
+                              Promote to Admin
+                            </DropdownMenuItem>
+                          )}
+                          <DropdownMenuItem
+                            onClick={() => toggleUserBlock(user.id)}
+                          >
+                            <Ban className="mr-2 h-4 w-4" />
+                            {user.blocked ? "Unblock User" : "Block User"}
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            className="text-red-600 focus:bg-red-50 focus:text-red-700"
+                            onClick={() => setDeleteTarget(user)}
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Delete User
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {filtered.length === 0 && (
+                  <TableRow>
+                    <TableCell
+                      colSpan={7}
+                      className="h-24 text-center text-muted-foreground"
+                    >
+                      No users found.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
 

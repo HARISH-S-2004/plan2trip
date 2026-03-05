@@ -113,8 +113,8 @@ export default function AdminTestimonialsPage() {
             {/* Header */}
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold tracking-tight text-foreground">
-                        Testimonials (What Our Travelers Say)
+                    <h1 className="text-2xl font-bold tracking-tight text-foreground font-playfair">
+                        Testimonials (Social Proof)
                     </h1>
                     <p className="text-sm text-muted-foreground">
                         Manage customer reviews and feedback displayed on the home page.
@@ -122,9 +122,10 @@ export default function AdminTestimonialsPage() {
                 </div>
                 <Dialog open={addOpen} onOpenChange={setAddOpen}>
                     <DialogTrigger asChild>
-                        <Button className="bg-primary text-primary-foreground hover:bg-primary/90">
+                        <Button className="bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 rounded-xl shadow-lg shadow-primary/20">
                             <Plus className="mr-2 h-4 w-4" />
-                            Add Testimonial
+                            <span className="hidden sm:inline">Add Testimonial</span>
+                            <span className="sm:hidden text-xs">New Review</span>
                         </Button>
                     </DialogTrigger>
                     <DialogContent className="max-w-[95vw] sm:max-w-lg max-h-[90vh] overflow-y-auto">
@@ -176,39 +177,39 @@ export default function AdminTestimonialsPage() {
             </div>
 
             {/* Search */}
-            <Card className="gap-0 py-0">
-                <CardContent className="p-4">
+            <Card className="gap-0 py-0 border-none shadow-sm bg-secondary/5">
+                <CardContent className="p-3 sm:p-4">
                     <div className="relative">
                         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                         <Input
                             placeholder="Search testimonials..."
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
-                            className="pl-9"
+                            className="pl-9 h-11 rounded-xl bg-background border-none shadow-sm"
                         />
                     </div>
                 </CardContent>
             </Card>
 
             {/* Table */}
-            <Card>
-                <CardHeader>
-                    <CardTitle className="text-base">
+            <Card className="border-none shadow-sm overflow-hidden rounded-2xl">
+                <CardHeader className="p-4 sm:p-6 pb-2">
+                    <CardTitle className="text-lg sm:text-xl font-bold">
                         Customer Reviews
-                        <Badge variant="secondary" className="ml-2">
+                        <Badge variant="secondary" className="ml-2 font-black rounded-full px-2">
                             {filtered.length}
                         </Badge>
                     </CardTitle>
                 </CardHeader>
-                <CardContent>
-                    <div className="rounded-md border">
+                <CardContent className="p-0 sm:p-6">
+                    <div className="overflow-x-auto">
                         <Table>
                             <TableHeader>
-                                <TableRow>
-                                    <TableHead>Customer</TableHead>
-                                    <TableHead>Review</TableHead>
-                                    <TableHead>Rating</TableHead>
-                                    <TableHead className="text-right">Actions</TableHead>
+                                <TableRow className="border-none bg-muted/30">
+                                    <TableHead className="px-4 py-3 font-bold text-foreground">Customer</TableHead>
+                                    <TableHead className="hidden md:table-cell py-3 font-bold text-foreground">Review</TableHead>
+                                    <TableHead className="py-3 font-bold text-foreground">Rating</TableHead>
+                                    <TableHead className="py-3 font-bold text-foreground text-right px-4">Actions</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -232,9 +233,9 @@ export default function AdminTestimonialsPage() {
                                                     </div>
                                                 </div>
                                             </TableCell>
-                                            <TableCell className="max-w-[300px]">
-                                                <p className="line-clamp-2 text-xs text-muted-foreground">
-                                                    {t.text}
+                                            <TableCell className="hidden md:table-cell max-w-[300px]">
+                                                <p className="line-clamp-2 text-xs text-muted-foreground italic">
+                                                    "{t.text}"
                                                 </p>
                                             </TableCell>
                                             <TableCell>
@@ -250,14 +251,13 @@ export default function AdminTestimonialsPage() {
                                                     ))}
                                                 </div>
                                             </TableCell>
-                                            <TableCell className="text-right">
-                                                <div className="flex items-center justify-end gap-2">
-                                                    <Button variant="outline" size="sm" onClick={() => openEdit(t)} className="h-8 px-2">
-                                                        <Pencil className="mr-1 h-3 w-3" />
-                                                        Edit
+                                            <TableCell className="text-right px-4">
+                                                <div className="flex items-center justify-end gap-1">
+                                                    <Button variant="ghost" size="icon" onClick={() => openEdit(t)} className="h-8 w-8 text-muted-foreground hover:text-primary rounded-xl">
+                                                        <Pencil className="h-4 w-4" />
                                                     </Button>
-                                                    <Button variant="outline" size="sm" onClick={() => setDeleteTarget(t)} className="h-8 px-2 text-red-500 hover:text-red-600">
-                                                        <Trash2 className="h-3 w-3" />
+                                                    <Button variant="ghost" size="icon" onClick={() => setDeleteTarget(t)} className="h-8 w-8 text-muted-foreground hover:text-red-600 rounded-xl">
+                                                        <Trash2 className="h-4 w-4" />
                                                     </Button>
                                                 </div>
                                             </TableCell>
@@ -265,74 +265,75 @@ export default function AdminTestimonialsPage() {
                                     ))
                                 )}
                             </TableBody>
-                        </Table>
-                    </div>
-                </CardContent>
-            </Card>
+                        </TableBody>
+                    </Table>
+                </div>
+            </CardContent>
+        </Card>
 
-            {/* Edit Dialog */}
-            <Dialog open={!!editTarget} onOpenChange={(open) => !open && setEditTarget(null)}>
-                <DialogContent className="max-w-[95vw] sm:max-w-lg max-h-[90vh] overflow-y-auto">
-                    <DialogHeader>
-                        <DialogTitle>Edit Testimonial</DialogTitle>
-                        <DialogDescription>
-                            Update the customer's feedback.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="grid gap-4 py-4">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div className="grid gap-2">
-                                <Label>Customer Name</Label>
-                                <Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
-                            </div>
-                            <div className="grid gap-2">
-                                <Label>Location</Label>
-                                <Input value={form.location} onChange={e => setForm(f => ({ ...f, location: e.target.value }))} />
-                            </div>
-                        </div>
-                        <div className="grid gap-2">
-                            <Label>Review Text</Label>
-                            <Textarea
-                                className="min-h-[100px]"
-                                value={form.text}
-                                onChange={e => setForm(f => ({ ...f, text: e.target.value }))}
-                            />
-                        </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div className="grid gap-2">
-                                <Label>Rating (1-5)</Label>
-                                <Input type="number" min={1} max={5} value={form.rating} onChange={e => setForm(f => ({ ...f, rating: parseInt(e.target.value) }))} />
-                            </div>
-                            <div className="grid gap-2">
-                                <Label>Avatar Initials</Label>
-                                <Input maxLength={2} value={form.avatar} onChange={e => setForm(f => ({ ...f, avatar: e.target.value }))} />
-                            </div>
-                        </div>
+            {/* Edit Dialog */ }
+    <Dialog open={!!editTarget} onOpenChange={(open) => !open && setEditTarget(null)}>
+        <DialogContent className="max-w-[95vw] sm:max-w-lg max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+                <DialogTitle>Edit Testimonial</DialogTitle>
+                <DialogDescription>
+                    Update the customer's feedback.
+                </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="grid gap-2">
+                        <Label>Customer Name</Label>
+                        <Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
                     </div>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setEditTarget(null)}>Cancel</Button>
-                        <Button className="bg-primary text-primary-foreground hover:bg-primary/90" onClick={handleSaveEdit}>
-                            Save Changes
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                    <div className="grid gap-2">
+                        <Label>Location</Label>
+                        <Input value={form.location} onChange={e => setForm(f => ({ ...f, location: e.target.value }))} />
+                    </div>
+                </div>
+                <div className="grid gap-2">
+                    <Label>Review Text</Label>
+                    <Textarea
+                        className="min-h-[100px]"
+                        value={form.text}
+                        onChange={e => setForm(f => ({ ...f, text: e.target.value }))}
+                    />
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="grid gap-2">
+                        <Label>Rating (1-5)</Label>
+                        <Input type="number" min={1} max={5} value={form.rating} onChange={e => setForm(f => ({ ...f, rating: parseInt(e.target.value) }))} />
+                    </div>
+                    <div className="grid gap-2">
+                        <Label>Avatar Initials</Label>
+                        <Input maxLength={2} value={form.avatar} onChange={e => setForm(f => ({ ...f, avatar: e.target.value }))} />
+                    </div>
+                </div>
+            </div>
+            <DialogFooter>
+                <Button variant="outline" onClick={() => setEditTarget(null)}>Cancel</Button>
+                <Button className="bg-primary text-primary-foreground hover:bg-primary/90" onClick={handleSaveEdit}>
+                    Save Changes
+                </Button>
+            </DialogFooter>
+        </DialogContent>
+    </Dialog>
 
-            {/* Delete Confirmation */}
-            <Dialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Delete Testimonial</DialogTitle>
-                        <DialogDescription>
-                            Are you sure you want to remove this testimonial? This action cannot be undone.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setDeleteTarget(null)}>Cancel</Button>
-                        <Button variant="destructive" onClick={handleDelete}>Delete</Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
-        </div>
+    {/* Delete Confirmation */ }
+    <Dialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <DialogContent>
+            <DialogHeader>
+                <DialogTitle>Delete Testimonial</DialogTitle>
+                <DialogDescription>
+                    Are you sure you want to remove this testimonial? This action cannot be undone.
+                </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+                <Button variant="outline" onClick={() => setDeleteTarget(null)}>Cancel</Button>
+                <Button variant="destructive" onClick={handleDelete}>Delete</Button>
+            </DialogFooter>
+        </DialogContent>
+    </Dialog>
+        </div >
     )
 }

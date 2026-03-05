@@ -21,21 +21,21 @@ interface AdminTopbarProps {
 export function AdminTopbar({ onMobileMenuToggle }: AdminTopbarProps) {
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-border bg-card/80 px-4 backdrop-blur-lg lg:px-6">
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2 sm:gap-4">
         <Button
           variant="ghost"
           size="icon"
-          className="lg:hidden"
+          className="lg:hidden shrink-0"
           onClick={onMobileMenuToggle}
           aria-label="Toggle mobile menu"
         >
           <Menu className="h-5 w-5" />
         </Button>
-        <div className="relative hidden sm:block">
+        <div className="relative hidden lg:block">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            placeholder="Search..."
-            className="h-9 w-64 rounded-lg bg-secondary pl-9 text-sm"
+            placeholder="Search dashboard..."
+            className="h-9 w-48 xl:w-64 rounded-xl bg-secondary/50 pl-9 text-xs border-none focus-visible:ring-primary/20"
           />
         </div>
       </div>

@@ -8,6 +8,7 @@ import {
   Trash2,
   Plus,
   Pencil,
+  Edit,
   Search,
 } from "lucide-react"
 import { useState } from "react"
@@ -135,15 +136,23 @@ export default function AdminPaymentsPage() {
     })
   }
 
-  function handleAdd() {
-    const newPayment = {
-      ...form,
-      id: `PAY-${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`,
-      amount: Number(form.amount) || 0,
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  async function handleAdd() {
+    if (isSubmitting) return
+    setIsSubmitting(true)
+    try {
+      const newPayment = {
+        ...form,
+        id: `PAY-${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`,
+        amount: Number(form.amount) || 0,
+      }
+      await addPayment(newPayment)
+      setAddOpen(false)
+      resetForm()
+    } finally {
+      setIsSubmitting(false)
     }
-    addPayment(newPayment)
-    setAddOpen(false)
-    resetForm()
   }
 
   function handleEdit(payment: any) {
@@ -158,16 +167,21 @@ export default function AdminPaymentsPage() {
     })
   }
 
-  function handleSaveEdit() {
-    if (!editTarget) return
-    const updated = {
-      ...editTarget,
-      ...form,
-      amount: Number(form.amount) || 0,
+  async function handleSaveEdit() {
+    if (!editTarget || isSubmitting) return
+    setIsSubmitting(true)
+    try {
+      const updated = {
+        ...editTarget,
+        ...form,
+        amount: Number(form.amount) || 0,
+      }
+      await updatePayment(updated)
+      setEditTarget(null)
+      resetForm()
+    } finally {
+      setIsSubmitting(false)
     }
-    updatePayment(updated)
-    setEditTarget(null)
-    resetForm()
   }
 
   function handleDelete() {
@@ -200,34 +214,38 @@ export default function AdminPaymentsPage() {
             Payments
           </h1>
           <p className="text-sm text-muted-foreground">
-            Track all payment transactions and revenue.
+            Track all transactions and revenue.
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={handleExport}>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button variant="outline" onClick={handleExport} className="rounded-xl h-10 flex-1 sm:flex-none">
             <Download className="mr-2 h-4 w-4" />
-            Export CSV
+            <span className="hidden sm:inline">Export CSV</span>
+            <span className="sm:hidden">Export</span>
           </Button>
-          <Button onClick={() => { resetForm(); setAddOpen(true); }} className="bg-primary text-primary-foreground">
+          <Button
+            onClick={() => { resetForm(); setAddOpen(true); }}
+            className="bg-primary text-primary-foreground rounded-xl h-10 flex-1 sm:flex-none"
+          >
             <Plus className="mr-2 h-4 w-4" />
-            Add Payment
+            Add Record
           </Button>
         </div>
       </div>
 
       {/* Stats */}
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-3">
         {dynamicPaymentStats.map((stat) => (
           <Card key={stat.label} className="gap-0 py-0 overflow-hidden border-none shadow-sm bg-card/50">
             <CardContent className="flex items-center gap-3 p-4">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary/10">
-                <IndianRupee className="h-6 w-6 text-primary" />
+              <div className="flex h-10 w-10 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-2xl bg-primary/10">
+                <IndianRupee className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
               </div>
-              <div className="flex flex-col gap-0.5">
-                <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground/70">
+              <div className="flex flex-col gap-0.5 min-w-0">
+                <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-muted-foreground/70 truncate">
                   {stat.label}
                 </span>
-                <span className="text-2xl font-black text-foreground tracking-tight">
+                <span className="text-lg sm:text-2xl font-black text-foreground tracking-tight">
                   {stat.value}
                 </span>
                 <div className="flex items-center gap-1">
@@ -238,10 +256,8 @@ export default function AdminPaymentsPage() {
                   )}
                   <span
                     className={cn(
-                      "text-[11px] font-bold",
-                      stat.trend === "up"
-                        ? "text-emerald-600"
-                        : "text-red-500"
+                      "text-[10px] sm:text-[11px] font-bold",
+                      stat.trend === "up" ? "text-emerald-600" : "text-red-500"
                     )}
                   >
                     {stat.change}
@@ -255,91 +271,112 @@ export default function AdminPaymentsPage() {
 
       {/* Table */}
       <Card className="border-none shadow-sm overflow-hidden">
-        <CardHeader className="pb-3">
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div>
-              <CardTitle className="text-xl font-bold">
-                Transaction History
-                <Badge variant="secondary" className="ml-2 font-black rounded-full px-2">
-                  {filteredPayments.length}
-                </Badge>
-              </CardTitle>
-              <CardDescription className="text-xs">
-                All payment transactions across bookings.
-              </CardDescription>
+        <CardHeader className="p-4 sm:p-6 pb-3">
+          <div className="flex flex-col gap-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-lg sm:text-xl font-bold">
+                  Transactions
+                  <Badge variant="secondary" className="ml-2 font-black rounded-full px-2">
+                    {filteredPayments.length}
+                  </Badge>
+                </CardTitle>
+                <CardDescription className="text-xs">
+                  Review all your business transactions.
+                </CardDescription>
+              </div>
             </div>
-            <div className="relative w-full md:w-72">
+            <div className="relative w-full">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
-                placeholder="Search by ID, name, or booking..."
-                className="pl-9 h-10 rounded-xl bg-secondary/20 border-none"
+                placeholder="Search..."
+                className="pl-9 h-11 rounded-xl bg-secondary/10 border-none"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
           </div>
         </CardHeader>
-        <CardContent className="p-0">
+        <CardContent className="p-0 sm:p-6">
           <div className="overflow-x-auto">
             <Table>
-              <TableHeader className="bg-secondary/10">
-                <TableRow className="hover:bg-transparent border-none">
-                  <TableHead className="font-bold py-4">Payment ID</TableHead>
-                  <TableHead className="hidden sm:table-cell font-bold">Booking</TableHead>
-                  <TableHead className="font-bold">Customer</TableHead>
-                  <TableHead className="font-bold">Amount</TableHead>
-                  <TableHead className="hidden md:table-cell font-bold">Method</TableHead>
-                  <TableHead className="hidden lg:table-cell font-bold">Date</TableHead>
-                  <TableHead className="font-bold">Status</TableHead>
-                  <TableHead className="w-[100px] text-right pr-6 font-bold font-bold">Actions</TableHead>
+              <TableHeader>
+                <TableRow className="border-none bg-muted/30">
+                  <TableHead className="px-4 py-3 font-bold text-foreground">Transaction ID</TableHead>
+                  <TableHead className="py-3 font-bold text-foreground">Customer</TableHead>
+                  <TableHead className="hidden lg:table-cell py-3 font-bold text-foreground">Booking ID</TableHead>
+                  <TableHead className="hidden md:table-cell py-3 font-bold text-foreground">Booking</TableHead>
+                  <TableHead className="hidden sm:table-cell py-3 font-bold text-foreground">Date</TableHead>
+                  <TableHead className="py-3 font-bold text-foreground">Amount</TableHead>
+                  <TableHead className="py-3 font-bold text-foreground">Method</TableHead>
+                  <TableHead className="py-3 font-bold text-foreground">Status</TableHead>
+                  <TableHead className="text-right px-4 py-3 font-bold text-foreground">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredPayments.map((payment) => (
-                  <TableRow key={payment.id} className="group hover:bg-secondary/5 transition-colors border-secondary/20">
-                    <TableCell className="font-bold text-foreground">
+                  <TableRow key={payment.id} className="border-b border-muted/50 hover:bg-muted/10 transition-colors">
+                    <TableCell className="px-4 py-4 font-black text-xs text-primary">
                       {payment.id}
                     </TableCell>
-                    <TableCell className="hidden text-muted-foreground/80 font-medium sm:table-cell">
+                    <TableCell className="py-4">
+                      <div className="flex flex-col min-w-[120px]">
+                        <span className="text-sm font-bold text-foreground">
+                          {payment.customer || "Guest"}
+                        </span>
+                        {payment.customerEmail && (
+                          <span className="text-[10px] text-muted-foreground/70">
+                            {payment.customerEmail}
+                          </span>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell className="hidden lg:table-cell py-4 text-xs font-medium text-muted-foreground">
                       {payment.bookingId}
                     </TableCell>
-                    <TableCell>
-                      <div className="font-bold text-foreground">{payment.customer}</div>
+                    <TableCell className="hidden md:table-cell py-4">
+                      <span className="text-xs font-medium text-muted-foreground line-clamp-1 max-w-[150px]">
+                        {payment.bookingTitle || payment.bookingId || "N/A"}
+                      </span>
                     </TableCell>
-                    <TableCell className="font-black text-primary">
-                      ₹{payment.amount.toLocaleString()}
-                    </TableCell>
-                    <TableCell className="hidden text-muted-foreground md:table-cell">
-                      {payment.method}
-                    </TableCell>
-                    <TableCell className="hidden text-muted-foreground font-medium lg:table-cell">
-                      {new Date(payment.date).toLocaleDateString("en-US", {
+                    <TableCell className="hidden sm:table-cell py-4 text-xs text-muted-foreground whitespace-nowrap">
+                      {payment.date ? new Date(payment.date).toLocaleDateString("en-US", {
                         month: "short",
                         day: "numeric",
-                        year: "numeric",
-                      })}
+                        year: "numeric"
+                      }) : "N/A"}
                     </TableCell>
-                    <TableCell>
-                      <PaymentStatusBadge status={payment.status} />
+                    <TableCell className="py-4 font-black text-foreground">
+                      ₹{payment.amount.toLocaleString()}
                     </TableCell>
-                    <TableCell className="text-right pr-6">
+                    <TableCell className="py-4 font-medium text-xs text-muted-foreground">
+                      {payment.method}
+                    </TableCell>
+                    <TableCell className="py-4">
+                      <Badge className={cn("rounded-full px-2.5 py-0.5 text-[10px] font-black uppercase tracking-tighter",
+                        payment.status === "Paid" ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20" : "bg-amber-500/10 text-amber-600 border-amber-500/20")}>
+                        {payment.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right px-4 py-4">
                       <div className="flex items-center justify-end gap-1">
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-8 w-8 rounded-lg text-muted-foreground hover:bg-primary/10 hover:text-primary transition-all"
+                          className="h-8 w-8 rounded-full text-muted-foreground hover:text-primary hover:bg-primary/10"
                           onClick={() => handleEdit(payment)}
                         >
-                          <Pencil className="h-3.5 w-3.5" />
+                          <Edit className="h-4 w-4" />
                         </Button>
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-8 w-8 rounded-lg text-muted-foreground hover:bg-red-50 hover:text-red-500 transition-all"
-                          onClick={() => setDeleteTarget(payment)}
-                          aria-label="Delete payment"
+                          className="h-8 w-8 rounded-full text-muted-foreground hover:text-red-500 hover:bg-red-50"
+                          onClick={() => {
+                            setDeleteTarget(payment)
+                          }}
                         >
-                          <Trash2 className="h-3.5 w-3.5" />
+                          <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
                     </TableCell>

@@ -107,7 +107,7 @@ export default function AdminAdsPage() {
         const timeoutId = setTimeout(() => {
             setUploading(false)
             console.warn("Upload timed out - resetting state.")
-        }, 10000)
+        }, 30000)
 
         try {
             const oldUrl = editTarget?.image || form.image
@@ -195,7 +195,7 @@ export default function AdminAdsPage() {
             {/* Header */}
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold tracking-tight text-foreground">
+                    <h1 className="text-2xl font-bold tracking-tight text-foreground font-playfair">
                         Advertisements
                     </h1>
                     <p className="text-sm text-muted-foreground">
@@ -204,9 +204,10 @@ export default function AdminAdsPage() {
                 </div>
                 <Dialog open={addOpen} onOpenChange={setAddOpen}>
                     <DialogTrigger asChild>
-                        <Button className="bg-primary text-primary-foreground hover:bg-primary/90">
+                        <Button className="bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 rounded-xl shadow-lg shadow-primary/20">
                             <Plus className="mr-2 h-4 w-4" />
-                            Create Advertisement
+                            <span className="hidden sm:inline">Create Advertisement</span>
+                            <span className="sm:hidden text-xs">New Ad</span>
                         </Button>
                     </DialogTrigger>
                     <DialogContent className="max-w-[95vw] sm:max-w-lg max-h-[90vh] overflow-y-auto">
@@ -275,105 +276,106 @@ export default function AdminAdsPage() {
             </div>
 
             {/* Search */}
-            <Card className="gap-0 py-0">
-                <CardContent className="p-4">
+            <Card className="gap-0 py-0 border-none shadow-sm bg-secondary/5">
+                <CardContent className="p-3 sm:p-4">
                     <div className="relative">
                         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                         <Input
                             placeholder="Search advertisements..."
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
-                            className="pl-9"
+                            className="pl-9 h-11 rounded-xl bg-background border-none shadow-sm"
                         />
                     </div>
                 </CardContent>
             </Card>
 
             {/* Table */}
-            <Card>
-                <CardHeader>
-                    <CardTitle className="text-base">
+            <Card className="border-none shadow-sm overflow-hidden rounded-2xl">
+                <CardHeader className="p-4 sm:p-6 pb-2">
+                    <CardTitle className="text-lg sm:text-xl font-bold">
                         Active Campaigns
-                        <Badge variant="secondary" className="ml-2">
+                        <Badge variant="secondary" className="ml-2 font-black rounded-full px-2">
                             {filtered.length}
                         </Badge>
                     </CardTitle>
                 </CardHeader>
-                <CardContent>
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Preview</TableHead>
-                                <TableHead>Title</TableHead>
-                                <TableHead>Position</TableHead>
-                                <TableHead>Status</TableHead>
-                                <TableHead className="text-right">Actions</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {filtered.map((ad) => (
-                                <TableRow key={ad.id}>
-                                    <TableCell>
-                                        <div className="relative h-12 w-20 overflow-hidden rounded border bg-muted">
-                                            {ad.image ? (
-                                                <Image src={ad.image} alt={ad.title} fill unoptimized className="object-cover" />
-                                            ) : (
-                                                <div className="flex h-full w-full items-center justify-center">
-                                                    <ImageIcon className="h-5 w-5 text-muted-foreground/30" />
-                                                </div>
-                                            )}
-                                        </div>
-                                    </TableCell>
-                                    <TableCell>
-                                        <div className="flex flex-col">
-                                            <span className="font-medium">{ad.title}</span>
-                                            <span className="text-xs text-muted-foreground line-clamp-1">{ad.subtitle}</span>
-                                        </div>
-                                    </TableCell>
-                                    <TableCell>
-                                        <Badge variant="outline" className="capitalize">
-                                            {ad.position}
-                                        </Badge>
-                                    </TableCell>
-                                    <TableCell>
-                                        <div className="flex items-center gap-2">
-                                            <Switch
-                                                checked={ad.status === "Active"}
-                                                onCheckedChange={() => toggleStatus(ad)}
-                                            />
-                                            <span className={cn(
-                                                "text-xs font-medium",
-                                                ad.status === "Active" ? "text-emerald-600" : "text-muted-foreground"
-                                            )}>
-                                                {ad.status}
-                                            </span>
-                                        </div>
-                                    </TableCell>
-                                    <TableCell>
-                                        <div className="flex items-center justify-end gap-2">
-                                            <Button variant="outline" size="sm" onClick={() => openEdit(ad)} className="h-8 gap-1 text-xs px-2">
-                                                <Pencil className="h-3 w-3" />
-                                                Edit
-                                            </Button>
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger asChild>
-                                                    <Button variant="ghost" size="icon" className="h-8 w-8">
-                                                        <MoreHorizontal className="h-4 w-4" />
-                                                    </Button>
-                                                </DropdownMenuTrigger>
-                                                <DropdownMenuContent align="end">
-                                                    <DropdownMenuItem variant="destructive" onClick={() => setDeleteTarget(ad)}>
-                                                        <Trash2 className="mr-2 h-4 w-4" />
-                                                        Delete
-                                                    </DropdownMenuItem>
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
-                                        </div>
-                                    </TableCell>
+                <CardContent className="p-0 sm:p-6">
+                    <div className="overflow-x-auto">
+                        <Table>
+                            <TableHeader>
+                                <TableRow className="border-none bg-muted/30">
+                                    <TableHead className="px-4 py-3 font-bold text-foreground">Preview</TableHead>
+                                    <TableHead className="py-3 font-bold text-foreground">Title</TableHead>
+                                    <TableHead className="hidden sm:table-cell py-3 font-bold text-foreground">Position</TableHead>
+                                    <TableHead className="py-3 font-bold text-foreground">Status</TableHead>
+                                    <TableHead className="py-3 font-bold text-foreground text-right px-4">Actions</TableHead>
                                 </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
+                            </TableHeader>
+                            <TableBody>
+                                {filtered.map((ad) => (
+                                    <TableRow key={ad.id}>
+                                        <TableCell>
+                                            <div className="relative h-12 w-20 overflow-hidden rounded border bg-muted">
+                                                {ad.image ? (
+                                                    <Image src={ad.image} alt={ad.title} fill unoptimized className="object-cover" />
+                                                ) : (
+                                                    <div className="flex h-full w-full items-center justify-center">
+                                                        <ImageIcon className="h-5 w-5 text-muted-foreground/30" />
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </TableCell>
+                                        <TableCell>
+                                            <div className="flex flex-col">
+                                                <span className="font-medium">{ad.title}</span>
+                                                <span className="text-xs text-muted-foreground line-clamp-1">{ad.subtitle}</span>
+                                            </div>
+                                        </TableCell>
+                                        <TableCell className="hidden sm:table-cell">
+                                            <Badge variant="outline" className="capitalize text-[10px] font-bold">
+                                                {ad.position}
+                                            </Badge>
+                                        </TableCell>
+                                        <TableCell>
+                                            <div className="flex items-center gap-2">
+                                                <Switch
+                                                    checked={ad.status === "Active"}
+                                                    onCheckedChange={() => toggleStatus(ad)}
+                                                />
+                                                <span className={cn(
+                                                    "text-xs font-medium",
+                                                    ad.status === "Active" ? "text-emerald-600" : "text-muted-foreground"
+                                                )}>
+                                                    {ad.status}
+                                                </span>
+                                            </div>
+                                        </TableCell>
+                                        <TableCell className="text-right px-4">
+                                            <div className="flex items-center justify-end gap-1 sm:gap-2">
+                                                <Button variant="ghost" size="icon" onClick={() => openEdit(ad)} className="h-8 w-8 text-muted-foreground hover:text-primary rounded-xl">
+                                                    <Pencil className="h-4 w-4" />
+                                                </Button>
+                                                <DropdownMenu>
+                                                    <DropdownMenuTrigger asChild>
+                                                        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full">
+                                                            <MoreHorizontal className="h-4 w-4" />
+                                                        </Button>
+                                                    </DropdownMenuTrigger>
+                                                    <DropdownMenuContent align="end" className="rounded-xl border-none shadow-xl">
+                                                        <DropdownMenuItem onClick={() => setDeleteTarget(ad)} className="text-red-500 focus:text-red-500 focus:bg-red-50 rounded-lg">
+                                                            <Trash2 className="mr-2 h-4 w-4" />
+                                                            Delete
+                                                        </DropdownMenuItem>
+                                                    </DropdownMenuContent>
+                                                </DropdownMenu>
+                                            </div>
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </div>
                 </CardContent>
             </Card>
 

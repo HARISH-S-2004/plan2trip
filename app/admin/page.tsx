@@ -145,7 +145,7 @@ export default function AdminDashboardPage() {
   const recentBookings = bookings.slice(0, 5)
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-6 w-full max-w-full overflow-hidden">
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold tracking-tight text-foreground">
@@ -157,43 +157,35 @@ export default function AdminDashboardPage() {
       </div>
 
       {/* Stat Cards */}
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-4 grid-cols-2 md:grid-cols-4 lg:grid-cols-4">
         {liveStats.map((stat) => (
-          <Card key={stat.title} className="gap-0 py-0">
-            <CardContent className="flex items-center gap-4 p-5">
+          <Card key={stat.title} className="gap-0 py-0 border-none shadow-sm bg-card/50 overflow-hidden">
+            <CardContent className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 p-4">
               <div
                 className={cn(
-                  "flex h-11 w-11 shrink-0 items-center justify-center rounded-xl",
+                  "flex h-9 w-9 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-xl",
                   stat.accent
                 )}
               >
-                <stat.icon className="h-5 w-5" />
+                <stat.icon className="h-4 w-4 sm:h-5 sm:w-5" />
               </div>
-              <div className="flex flex-col gap-0.5">
-                <span className="text-xs font-medium text-muted-foreground">
+              <div className="flex flex-col gap-0.5 min-w-0 w-full">
+                <span className="text-[10px] sm:text-xs font-medium text-muted-foreground truncate">
                   {stat.title}
                 </span>
-                <span className="text-xl font-bold text-foreground">
+                <span className="text-base sm:text-xl font-bold text-foreground">
                   {"prefix" in stat ? stat.prefix : ""}{stat.value.toLocaleString()}
                 </span>
-                <div className="flex items-center gap-1">
-                  {stat.trend === "up" ? (
-                    <ArrowUpRight className="h-3 w-3 text-emerald-600" />
-                  ) : (
-                    <ArrowDownRight className="h-3 w-3 text-red-500" />
-                  )}
+                <div className="flex items-center gap-1 overflow-hidden">
                   <span
                     className={cn(
-                      "text-[11px] font-medium",
+                      "text-[9px] sm:text-[11px] font-medium whitespace-nowrap",
                       stat.trend === "up"
                         ? "text-emerald-600"
                         : "text-red-500"
                     )}
                   >
                     {stat.change}
-                  </span>
-                  <span className="text-[11px] text-muted-foreground">
-                    vs last month
                   </span>
                 </div>
               </div>
@@ -203,29 +195,29 @@ export default function AdminDashboardPage() {
       </div>
 
       {/* Charts */}
-      <div className="grid gap-6 lg:grid-cols-7">
+      <div className="grid gap-6 lg:grid-cols-7 overflow-hidden">
         {/* Revenue Chart */}
-        <Card className="lg:col-span-4">
-          <CardHeader>
+        <Card className="lg:col-span-4 overflow-hidden">
+          <CardHeader className="p-4 sm:p-6">
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle className="text-base">Revenue Overview</CardTitle>
-                <CardDescription>
-                  Monthly revenue for the past 6 months
+                <CardTitle className="text-sm sm:text-base font-bold">Revenue Overview</CardTitle>
+                <CardDescription className="text-[10px] sm:text-xs">
+                  Past 6 months activity
                 </CardDescription>
               </div>
-              <div className="flex items-center gap-1 text-xs font-medium text-emerald-600">
-                <TrendingUp className="h-3.5 w-3.5" />
+              <div className="flex items-center gap-1 text-[10px] sm:text-xs font-bold text-emerald-600">
+                <TrendingUp className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                 +12.5%
               </div>
             </div>
           </CardHeader>
-          <CardContent>
-            <div className="h-[280px]">
+          <CardContent className="p-0 sm:p-6 pb-4">
+            <div className="h-[200px] sm:h-[300px] w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart
                   data={dynamicRevenueData}
-                  margin={{ top: 5, right: 10, left: 10, bottom: 0 }}
+                  margin={{ top: 5, right: 10, left: -20, bottom: 0 }}
                 >
                   <CartesianGrid
                     strokeDasharray="3 3"
@@ -236,12 +228,12 @@ export default function AdminDashboardPage() {
                     dataKey="month"
                     axisLine={false}
                     tickLine={false}
-                    tick={{ fill: "oklch(0.5 0.02 250)", fontSize: 12 }}
+                    tick={{ fill: "oklch(0.5 0.02 250)", fontSize: 10 }}
                   />
                   <YAxis
                     axisLine={false}
                     tickLine={false}
-                    tick={{ fill: "oklch(0.5 0.02 250)", fontSize: 12 }}
+                    tick={{ fill: "oklch(0.5 0.02 250)", fontSize: 10 }}
                     tickFormatter={(value) => `₹${value / 1000}k`}
                   />
                   <Tooltip
@@ -249,7 +241,7 @@ export default function AdminDashboardPage() {
                       borderRadius: "8px",
                       border: "1px solid oklch(0.92 0.005 250)",
                       boxShadow: "0 4px 6px -1px rgba(0,0,0,0.1)",
-                      fontSize: "13px",
+                      fontSize: "11px",
                     }}
                     formatter={(value: number) => [
                       `₹${value.toLocaleString()}`,
@@ -261,8 +253,8 @@ export default function AdminDashboardPage() {
                     dataKey="revenue"
                     stroke="oklch(0.45 0.15 250)"
                     strokeWidth={2.5}
-                    dot={{ fill: "oklch(0.45 0.15 250)", r: 4 }}
-                    activeDot={{ r: 6 }}
+                    dot={{ fill: "oklch(0.45 0.15 250)", r: 3 }}
+                    activeDot={{ r: 5 }}
                   />
                 </LineChart>
               </ResponsiveContainer>
@@ -271,18 +263,18 @@ export default function AdminDashboardPage() {
         </Card>
 
         {/* Bookings by Destination */}
-        <Card className="lg:col-span-3">
-          <CardHeader>
-            <CardTitle className="text-base">Bookings by Destination</CardTitle>
-            <CardDescription>Top destinations this period</CardDescription>
+        <Card className="lg:col-span-3 overflow-hidden">
+          <CardHeader className="p-4 sm:p-6">
+            <CardTitle className="text-sm sm:text-base font-bold">Bookings by Destination</CardTitle>
+            <CardDescription className="text-[10px] sm:text-xs">Top destinations</CardDescription>
           </CardHeader>
-          <CardContent>
-            <div className="h-[280px]">
+          <CardContent className="p-0 sm:p-6 pb-4">
+            <div className="h-[200px] sm:h-[300px] w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
                   data={dynamicBookingsByDestination}
                   layout="vertical"
-                  margin={{ top: 5, right: 10, left: 0, bottom: 0 }}
+                  margin={{ top: 5, right: 10, left: -10, bottom: 0 }}
                 >
                   <CartesianGrid
                     strokeDasharray="3 3"
@@ -293,29 +285,29 @@ export default function AdminDashboardPage() {
                     type="number"
                     axisLine={false}
                     tickLine={false}
-                    tick={{ fill: "oklch(0.5 0.02 250)", fontSize: 12 }}
+                    tick={{ fill: "oklch(0.5 0.02 250)", fontSize: 10 }}
                   />
                   <YAxis
                     type="category"
                     dataKey="destination"
                     axisLine={false}
                     tickLine={false}
-                    tick={{ fill: "oklch(0.5 0.02 250)", fontSize: 12 }}
-                    width={80}
+                    tick={{ fill: "oklch(0.5 0.02 250)", fontSize: 10 }}
+                    width={70}
                   />
                   <Tooltip
                     contentStyle={{
                       borderRadius: "8px",
                       border: "1px solid oklch(0.92 0.005 250)",
                       boxShadow: "0 4px 6px -1px rgba(0,0,0,0.1)",
-                      fontSize: "13px",
+                      fontSize: "11px",
                     }}
                   />
                   <Bar
                     dataKey="bookings"
                     fill="oklch(0.75 0.14 85)"
                     radius={[0, 4, 4, 0]}
-                    barSize={20}
+                    barSize={18}
                   />
                 </BarChart>
               </ResponsiveContainer>
@@ -330,54 +322,56 @@ export default function AdminDashboardPage() {
           <CardTitle className="text-base">Recent Bookings</CardTitle>
           <CardDescription>Latest booking activity across all packages</CardDescription>
         </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Booking ID</TableHead>
-                <TableHead>Customer</TableHead>
-                <TableHead className="hidden md:table-cell">Package</TableHead>
-                <TableHead className="hidden sm:table-cell">Travel Date</TableHead>
-                <TableHead>Amount</TableHead>
-                <TableHead>Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {recentBookings.map((booking) => (
-                <TableRow key={booking.id}>
-                  <TableCell className="font-medium text-foreground">
-                    {booking.id}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex flex-col">
-                      <span className="text-sm font-medium text-foreground">
-                        {booking.customerName}
-                      </span>
-                      <span className="text-xs text-muted-foreground">
-                        {booking.customerEmail}
-                      </span>
-                    </div>
-                  </TableCell>
-                  <TableCell className="hidden md:table-cell text-muted-foreground">
-                    {booking.packageTitle}
-                  </TableCell>
-                  <TableCell className="hidden sm:table-cell text-muted-foreground">
-                    {new Date(booking.travelDate).toLocaleDateString("en-US", {
-                      month: "short",
-                      day: "numeric",
-                      year: "numeric",
-                    })}
-                  </TableCell>
-                  <TableCell className="font-medium text-foreground">
-                    ₹{booking.totalPrice.toLocaleString()}
-                  </TableCell>
-                  <TableCell>
-                    <StatusBadge status={booking.status} />
-                  </TableCell>
+        <CardContent className="p-0 sm:p-6">
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow className="border-none bg-muted/30 hover:bg-muted/30">
+                  <TableHead className="px-4 font-bold text-foreground">ID</TableHead>
+                  <TableHead className="font-bold text-foreground">Customer</TableHead>
+                  <TableHead className="hidden lg:table-cell font-bold text-foreground">Package</TableHead>
+                  <TableHead className="hidden md:table-cell font-bold text-foreground">Date</TableHead>
+                  <TableHead className="font-bold text-foreground">Amount</TableHead>
+                  <TableHead className="text-right px-4 font-bold text-foreground">Status</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {recentBookings.map((booking) => (
+                  <TableRow key={booking.id}>
+                    <TableCell className="font-medium text-foreground px-4">
+                      {booking.id}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex flex-col">
+                        <span className="text-sm font-medium text-foreground">
+                          {booking.customerName}
+                        </span>
+                        <span className="text-[10px] sm:text-xs text-muted-foreground line-clamp-1">
+                          {booking.customerEmail}
+                        </span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="hidden lg:table-cell text-muted-foreground">
+                      {booking.packageTitle}
+                    </TableCell>
+                    <TableCell className="hidden md:table-cell text-muted-foreground whitespace-nowrap">
+                      {new Date(booking.travelDate).toLocaleDateString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                        year: "numeric",
+                      })}
+                    </TableCell>
+                    <TableCell className="font-medium text-foreground">
+                      ₹{booking.totalPrice.toLocaleString()}
+                    </TableCell>
+                    <TableCell className="text-right px-4">
+                      <StatusBadge status={booking.status} />
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
     </div>

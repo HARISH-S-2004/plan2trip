@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { toast } from "sonner"
 import {
     Save,
     Mail,
@@ -33,7 +34,7 @@ export default function AdminFooterPage() {
         updateFooter(form)
         setTimeout(() => {
             setIsSaving(false)
-            alert("Footer settings updated successfully!")
+            toast.success("Footer settings updated successfully!")
         }, 500)
     }
 
@@ -58,7 +59,7 @@ export default function AdminFooterPage() {
             {/* Header */}
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold tracking-tight text-foreground">
+                    <h1 className="text-2xl font-bold tracking-tight text-foreground font-playfair">
                         Footer Settings
                     </h1>
                     <p className="text-sm text-muted-foreground">
@@ -66,7 +67,7 @@ export default function AdminFooterPage() {
                     </p>
                 </div>
                 <Button
-                    className="bg-primary text-primary-foreground hover:bg-primary/90"
+                    className="bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-6 rounded-xl shadow-lg shadow-primary/20 w-fit"
                     onClick={handleSave}
                     disabled={isSaving}
                 >
@@ -77,16 +78,16 @@ export default function AdminFooterPage() {
 
             <div className="grid gap-6 lg:grid-cols-2">
                 {/* General Info */}
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="text-base">Company Information</CardTitle>
-                        <CardDescription>Main description and company details.</CardDescription>
+                <Card className="border-none shadow-sm rounded-2xl">
+                    <CardHeader className="p-4 sm:p-6">
+                        <CardTitle className="text-lg font-bold">Company Information</CardTitle>
+                        <CardDescription className="text-xs">Main description and company details.</CardDescription>
                     </CardHeader>
-                    <CardContent className="space-y-4">
+                    <CardContent className="p-4 sm:p-6 pt-0 space-y-4">
                         <div className="grid gap-2">
-                            <Label>Site Description</Label>
+                            <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Site Description</Label>
                             <Textarea
-                                className="min-h-[120px]"
+                                className="min-h-[120px] rounded-xl border-none bg-secondary/30 focus-visible:ring-primary/20"
                                 value={form.description}
                                 onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
                             />
@@ -95,57 +96,60 @@ export default function AdminFooterPage() {
                 </Card>
 
                 {/* Contact Info */}
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="text-base">Contact Details</CardTitle>
-                        <CardDescription>Contact information displayed in the footer.</CardDescription>
+                <Card className="border-none shadow-sm rounded-2xl">
+                    <CardHeader className="p-4 sm:p-6">
+                        <CardTitle className="text-lg font-bold">Contact Details</CardTitle>
+                        <CardDescription className="text-xs">Contact information displayed in the footer.</CardDescription>
                     </CardHeader>
-                    <CardContent className="space-y-4">
+                    <CardContent className="p-4 sm:p-6 pt-0 space-y-4">
                         <div className="grid gap-2">
-                            <Label className="flex items-center gap-2">
+                            <Label className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">
                                 <Mail className="h-3.5 w-3.5 text-primary" />
                                 Email Address
                             </Label>
                             <Input
                                 value={form.email}
                                 onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
+                                className="h-11 rounded-xl border-none bg-secondary/30"
                             />
                         </div>
                         <div className="grid gap-2">
-                            <Label className="flex items-center gap-2">
+                            <Label className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">
                                 <Phone className="h-3.5 w-3.5 text-primary" />
                                 Phone Number
                             </Label>
                             <Input
                                 value={form.phone}
                                 onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
+                                className="h-11 rounded-xl border-none bg-secondary/30"
                             />
                         </div>
                         <div className="grid gap-2">
-                            <Label className="flex items-center gap-2">
+                            <Label className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">
                                 <MapPin className="h-3.5 w-3.5 text-primary" />
                                 Office Address
                             </Label>
                             <Input
                                 value={form.address}
                                 onChange={e => setForm(f => ({ ...f, address: e.target.value }))}
+                                className="h-11 rounded-xl border-none bg-secondary/30"
                             />
                         </div>
                     </CardContent>
                 </Card>
 
                 {/* Destinations */}
-                <Card className="lg:col-span-2">
-                    <CardHeader>
-                        <CardTitle className="text-base">Footer Destinations</CardTitle>
-                        <CardDescription>The links displayed in the "Destinations" column of the footer.</CardDescription>
+                <Card className="lg:col-span-2 border-none shadow-sm rounded-2xl">
+                    <CardHeader className="p-4 sm:p-6">
+                        <CardTitle className="text-lg font-bold">Footer Destinations</CardTitle>
+                        <CardDescription className="text-xs">The links displayed in the "Destinations" column of the footer.</CardDescription>
                     </CardHeader>
-                    <CardContent className="space-y-4">
+                    <CardContent className="p-4 sm:p-6 pt-0 space-y-4">
                         <div className="flex flex-wrap gap-2">
                             {form.destinations.map((dest) => (
-                                <div key={dest} className="flex items-center gap-1 rounded-full bg-secondary px-3 py-1.5 text-xs font-medium text-foreground">
+                                <div key={dest} className="flex items-center gap-1 rounded-full bg-secondary px-3 py-1.5 text-[11px] font-bold text-foreground">
                                     {dest}
-                                    <button onClick={() => removeDest(dest)} className="ml-1 text-muted-foreground hover:text-red-500">
+                                    <button onClick={() => removeDest(dest)} className="ml-1 text-muted-foreground hover:text-red-500 transition-colors">
                                         <X className="h-3 w-3" />
                                     </button>
                                 </div>
@@ -157,11 +161,11 @@ export default function AdminFooterPage() {
                                 value={newDest}
                                 onChange={e => setNewDest(e.target.value)}
                                 onKeyDown={e => e.key === 'Enter' && addDest()}
-                                className="max-w-[300px]"
+                                className="flex-1 sm:max-w-[400px] h-11 rounded-xl border-none bg-secondary/30"
                             />
-                            <Button variant="outline" size="sm" onClick={addDest}>
+                            <Button variant="outline" size="sm" onClick={addDest} className="h-11 rounded-xl px-6 border-primary/20 text-primary hover:bg-primary/5">
                                 <Plus className="mr-1 h-4 w-4" />
-                                Add
+                                <span className="hidden sm:inline">Add</span>
                             </Button>
                         </div>
                     </CardContent>

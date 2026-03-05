@@ -101,11 +101,11 @@ export default function AdminVillasPage() {
     async function uploadFile(file: File, folder: string = "villas", customOldUrl?: string): Promise<string | null> {
         setUploading(true)
 
-        // Safety timeout: reset "uploading" state after 10 seconds if it hangs
+        // Safety timeout: reset "uploading" state after 30 seconds if it hangs (slow connections)
         const timeoutId = setTimeout(() => {
             setUploading(false)
             console.warn("Upload timed out - resetting state.")
-        }, 10000)
+        }, 30000)
 
         try {
             const oldUrl = customOldUrl || editTarget?.image || form.image
@@ -256,14 +256,14 @@ export default function AdminVillasPage() {
                         Villas & Homestays
                     </h1>
                     <p className="text-sm text-muted-foreground">
-                        Manage your vacation rentals and homestays.
+                        Manage your vacation rentals and listings.
                     </p>
                 </div>
                 <Dialog open={addOpen} onOpenChange={setAddOpen}>
                     <DialogTrigger asChild>
-                        <Button className="bg-primary text-primary-foreground hover:bg-primary/90">
+                        <Button className="rounded-xl shadow-lg shadow-primary/20 bg-primary text-primary-foreground h-11">
                             <Plus className="mr-2 h-4 w-4" />
-                            Add Villa
+                            Add Property
                         </Button>
                     </DialogTrigger>
                     <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -295,130 +295,123 @@ export default function AdminVillasPage() {
             </div>
 
             {/* Search */}
-            <Card className="gap-0 py-0">
-                <CardContent className="p-4">
+            <Card className="gap-0 py-0 border-none shadow-sm bg-secondary/5">
+                <CardContent className="p-3 sm:p-4">
                     <div className="relative">
                         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                         <Input
                             placeholder="Search properties by name or destination..."
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
-                            className="pl-9"
+                            className="pl-9 h-11 rounded-xl bg-background border-none shadow-sm"
                         />
                     </div>
                 </CardContent>
             </Card>
 
             {/* Table */}
-            <Card>
-                <CardHeader>
-                    <CardTitle className="text-base">
+            <Card className="border-none shadow-sm overflow-hidden">
+                <CardHeader className="p-4 sm:p-6 pb-2">
+                    <CardTitle className="text-lg sm:text-xl font-bold">
                         All Properties
-                        <Badge variant="secondary" className="ml-2">
+                        <Badge variant="secondary" className="ml-2 font-black rounded-full px-2">
                             {filtered.length}
                         </Badge>
                     </CardTitle>
-                    <CardDescription>
+                    <CardDescription className="text-xs">
                         A list of all vacation rentals with their status and details.
                     </CardDescription>
                 </CardHeader>
-                <CardContent>
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Property</TableHead>
-                                <TableHead className="hidden md:table-cell">Destination</TableHead>
-                                <TableHead>Price/Night</TableHead>
-                                <TableHead className="hidden sm:table-cell">Rating</TableHead>
-                                <TableHead className="hidden sm:table-cell">Bookings</TableHead>
-                                <TableHead>Status</TableHead>
-                                <TableHead className="text-right">Actions</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {filtered.map((villa) => (
-                                <TableRow key={villa.id}>
-                                    <TableCell>
-                                        <div className="flex items-center gap-3">
-                                            <div className="relative h-10 w-14 shrink-0 overflow-hidden rounded-md border bg-muted">
-                                                {villa.image ? (
-                                                    <Image src={villa.image} alt={villa.name} fill unoptimized className="object-cover" />
-                                                ) : (
-                                                    <div className="flex h-full w-full items-center justify-center">
-                                                        <Home className="h-5 w-5 text-muted-foreground/40" />
-                                                    </div>
-                                                )}
+                <CardContent className="p-0 sm:p-6">
+                    <div className="overflow-x-auto">
+                        <Table>
+                            <TableHeader>
+                                <TableRow className="border-none bg-muted/30">
+                                    <TableHead className="px-4 py-3 font-bold text-foreground">Property</TableHead>
+                                    <TableHead className="hidden lg:table-cell py-3 font-bold text-foreground">Destination</TableHead>
+                                    <TableHead className="py-3 font-bold text-foreground">Price/Night</TableHead>
+                                    <TableHead className="hidden md:table-cell py-3 font-bold text-foreground text-center">Rating</TableHead>
+                                    <TableHead className="hidden sm:table-cell py-3 font-bold text-foreground text-center">Bookings</TableHead>
+                                    <TableHead className="py-3 font-bold text-foreground">Status</TableHead>
+                                    <TableHead className="w-12 py-3 font-bold text-foreground text-right px-4">Actions</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {filtered.map((villa) => (
+                                    <TableRow key={villa.id}>
+                                        <TableCell>
+                                            <div className="flex items-center gap-3">
+                                                <div className="relative h-10 w-14 shrink-0 overflow-hidden rounded-md border bg-muted">
+                                                    {villa.image ? (
+                                                        <Image src={villa.image} alt={villa.name} fill unoptimized className="object-cover" />
+                                                    ) : (
+                                                        <div className="flex h-full w-full items-center justify-center">
+                                                            <Home className="h-5 w-5 text-muted-foreground/40" />
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <span className="text-sm font-medium text-foreground">{villa.name}</span>
                                             </div>
-                                            <span className="text-sm font-medium text-foreground">{villa.name}</span>
-                                        </div>
-                                    </TableCell>
-                                    <TableCell className="hidden text-muted-foreground md:table-cell">{villa.destination}</TableCell>
-                                    <TableCell className="font-medium text-foreground">₹{villa.pricePerNight.toLocaleString()}</TableCell>
-                                    <TableCell className="hidden sm:table-cell">
-                                        <div className="flex items-center gap-1">
-                                            <Star className="h-3.5 w-3.5 fill-gold text-gold" />
-                                            <span className="text-sm text-muted-foreground">{villa.rating}</span>
-                                        </div>
-                                    </TableCell>
-                                    <TableCell className="hidden text-muted-foreground sm:table-cell">{villa.bookingsCount}</TableCell>
-                                    <TableCell>
-                                        <div className="flex items-center gap-2">
-                                            <Switch
-                                                checked={villa.status === "Active"}
-                                                onCheckedChange={() => toggleStatus(villa)}
-                                                aria-label={`Toggle ${villa.name} status`}
-                                            />
-                                            <Badge
-                                                variant="outline"
-                                                className={cn(
-                                                    "text-[11px]",
-                                                    villa.status === "Active"
-                                                        ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-                                                        : "border-muted bg-muted text-muted-foreground"
-                                                )}
-                                            >
-                                                {villa.status}
-                                            </Badge>
-                                        </div>
-                                    </TableCell>
-                                    <TableCell>
-                                        <div className="flex items-center justify-end gap-2">
-                                            <Link href={`/villas/${villa.id}`} target="_blank">
-                                                <Button variant="outline" size="sm" className="h-8 gap-1 text-xs font-medium text-muted-foreground hover:text-primary">
-                                                    <ExternalLink className="h-3 w-3" />
-                                                    View
-                                                </Button>
-                                            </Link>
-                                            <Button variant="outline" size="sm" onClick={() => openEdit(villa)} className="h-8 gap-1 text-xs font-medium text-muted-foreground hover:text-primary">
-                                                <Pencil className="h-3 w-3" />
-                                                Edit
-                                            </Button>
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger asChild>
-                                                    <Button variant="ghost" size="icon" className="h-8 w-8">
-                                                        <MoreHorizontal className="h-4 w-4" />
+                                        </TableCell>
+                                        <TableCell className="hidden lg:table-cell text-muted-foreground/70 text-xs font-medium">{villa.destination}</TableCell>
+                                        <TableCell className="font-bold text-foreground text-sm">₹{villa.pricePerNight.toLocaleString()}</TableCell>
+                                        <TableCell className="hidden md:table-cell text-center">
+                                            <div className="flex items-center justify-center gap-1">
+                                                <Star className="h-3 w-3 fill-gold text-gold" />
+                                                <span className="text-xs font-bold text-foreground/80">{villa.rating}</span>
+                                            </div>
+                                        </TableCell>
+                                        <TableCell className="hidden sm:table-cell text-center text-muted-foreground font-bold">{villa.bookingsCount}</TableCell>
+                                        <TableCell>
+                                            <div className="flex items-center gap-2">
+                                                <Switch
+                                                    checked={villa.status === "Active"}
+                                                    onCheckedChange={() => toggleStatus(villa)}
+                                                    aria-label={`Toggle ${villa.name} status`}
+                                                />
+                                                <Badge
+                                                    variant="outline"
+                                                    className={cn(
+                                                        "text-[11px]",
+                                                        villa.status === "Active"
+                                                            ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                                                            : "border-muted bg-muted text-muted-foreground"
+                                                    )}
+                                                >
+                                                    {villa.status}
+                                                </Badge>
+                                            </div>
+                                        </TableCell>
+                                        <TableCell className="px-4">
+                                            <div className="flex items-center justify-end gap-1 sm:gap-2">
+                                                <Link href={`/villas/${villa.id}`} target="_blank" className="hidden sm:inline">
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary">
+                                                        <ExternalLink className="h-4 w-4" />
                                                     </Button>
-                                                </DropdownMenuTrigger>
-                                                <DropdownMenuContent align="end">
-                                                    <DropdownMenuItem variant="destructive" onClick={() => setDeleteTarget(villa)}>
-                                                        <Trash2 className="mr-2 h-4 w-4" />
-                                                        Delete
-                                                    </DropdownMenuItem>
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
-                                        </div>
-                                    </TableCell>
-                                </TableRow>
-                            ))}
-                            {filtered.length === 0 && (
-                                <TableRow>
-                                    <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
-                                        No properties found.
-                                    </TableCell>
-                                </TableRow>
-                            )}
-                        </TableBody>
-                    </Table>
+                                                </Link>
+                                                <Button variant="ghost" size="icon" onClick={() => openEdit(villa)} className="h-8 w-8 text-muted-foreground hover:text-primary">
+                                                    <Pencil className="h-4 w-4" />
+                                                </Button>
+                                                <DropdownMenu>
+                                                    <DropdownMenuTrigger asChild>
+                                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground">
+                                                            <MoreHorizontal className="h-4 w-4" />
+                                                        </Button>
+                                                    </DropdownMenuTrigger>
+                                                    <DropdownMenuContent align="end" className="rounded-xl border-none shadow-xl">
+                                                        <DropdownMenuItem onClick={() => setDeleteTarget(villa)} className="text-red-500 focus:text-red-500 focus:bg-red-50">
+                                                            <Trash2 className="mr-2 h-4 w-4" />
+                                                            Delete
+                                                        </DropdownMenuItem>
+                                                    </DropdownMenuContent>
+                                                </DropdownMenu>
+                                            </div>
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </div>
                 </CardContent>
             </Card>
 

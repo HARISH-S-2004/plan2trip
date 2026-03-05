@@ -101,18 +101,20 @@ export default function AdminBookingsPage() {
   return (
     <div className="flex flex-col gap-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight text-foreground">
-          Bookings
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          View and manage all customer bookings.
-        </p>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground font-playfair">
+            Bookings
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            View and manage all customer bookings.
+          </p>
+        </div>
       </div>
 
       {/* Filters */}
-      <Card className="gap-0 py-0">
-        <CardContent className="p-4">
+      <Card className="gap-0 py-0 border-none shadow-sm bg-secondary/5">
+        <CardContent className="p-3 sm:p-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -120,16 +122,18 @@ export default function AdminBookingsPage() {
                 placeholder="Search by name, ID, or package..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="pl-9"
+                className="pl-9 h-11 rounded-xl bg-background border-none shadow-sm"
               />
             </div>
             <div className="flex items-center gap-2">
-              <Filter className="h-4 w-4 text-muted-foreground" />
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-[140px]">
-                  <SelectValue placeholder="Status" />
+                <SelectTrigger className="w-full sm:w-[160px] h-11 rounded-xl border-none shadow-sm bg-background">
+                  <div className="flex items-center gap-2">
+                    <Filter className="h-4 w-4 text-muted-foreground" />
+                    <SelectValue placeholder="Status" />
+                  </div>
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="rounded-xl border-none shadow-xl">
                   <SelectItem value="all">All Status</SelectItem>
                   <SelectItem value="Confirmed">Confirmed</SelectItem>
                   <SelectItem value="Pending">Pending</SelectItem>
@@ -142,150 +146,152 @@ export default function AdminBookingsPage() {
       </Card>
 
       {/* Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">
+      <Card className="border-none shadow-sm overflow-hidden rounded-2xl">
+        <CardHeader className="p-4 sm:p-6 pb-2">
+          <CardTitle className="text-lg sm:text-xl font-bold">
             All Bookings
-            <Badge variant="secondary" className="ml-2">
+            <Badge variant="secondary" className="ml-2 font-black rounded-full px-2">
               {filtered.length}
             </Badge>
           </CardTitle>
-          <CardDescription>
+          <CardDescription className="text-xs">
             Manage customer bookings, confirm or cancel pending ones.
           </CardDescription>
         </CardHeader>
-        <CardContent className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>ID</TableHead>
-                <TableHead>Customer</TableHead>
-                <TableHead className="hidden md:table-cell">Package</TableHead>
-                <TableHead className="hidden lg:table-cell">
-                  Travel Date
-                </TableHead>
-                <TableHead className="hidden sm:table-cell">
-                  Travelers
-                </TableHead>
-                <TableHead>Amount</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filtered.map((booking) => (
-                <TableRow key={booking.id}>
-                  <TableCell className="font-medium text-foreground">
-                    {booking.id}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex flex-col">
-                      <span className="text-sm font-medium text-foreground">
-                        {booking.customerName}
-                      </span>
-                      <span className="text-xs text-muted-foreground">
-                        {booking.customerEmail}
-                      </span>
-                      {booking.customerPhone && (
-                        <span className="text-[10px] text-primary font-medium mt-0.5">
-                          {booking.customerPhone}
+        <CardContent className="p-0 sm:p-6">
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow className="border-none bg-muted/30">
+                  <TableHead className="px-4 py-3 font-bold text-foreground">ID</TableHead>
+                  <TableHead className="py-3 font-bold text-foreground">Customer</TableHead>
+                  <TableHead className="hidden md:table-cell py-3 font-bold text-foreground">Package</TableHead>
+                  <TableHead className="hidden lg:table-cell py-3 font-bold text-foreground">
+                    Travel Date
+                  </TableHead>
+                  <TableHead className="hidden sm:table-cell py-3 font-bold text-foreground">
+                    Travelers
+                  </TableHead>
+                  <TableHead className="py-3 font-bold text-foreground">Amount</TableHead>
+                  <TableHead className="py-3 font-bold text-foreground">Status</TableHead>
+                  <TableHead className="py-3 font-bold text-foreground text-right px-4">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filtered.map((booking) => (
+                  <TableRow key={booking.id}>
+                    <TableCell className="font-medium text-foreground">
+                      {booking.id}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex flex-col">
+                        <span className="text-sm font-medium text-foreground">
+                          {booking.customerName}
                         </span>
-                      )}
-                      {booking.requirements && (
-                        <p className="text-[10px] text-muted-foreground mt-1 bg-secondary/30 p-1.5 rounded italic line-clamp-2 max-w-[200px]">
-                          "{booking.requirements}"
-                        </p>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell className="hidden text-muted-foreground md:table-cell">
-                    <div className="flex flex-col">
-                      <span>{booking.packageTitle}</span>
-                      {booking.packageId === "enquiry" && (
-                        <Badge variant="outline" className="w-fit text-[9px] h-4 px-1 mt-1 border-primary/30 text-primary">Enquiry</Badge>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell className="hidden text-muted-foreground lg:table-cell">
-                    {new Date(booking.travelDate).toLocaleDateString("en-US", {
-                      month: "short",
-                      day: "numeric",
-                      year: "numeric",
-                    })}
-                  </TableCell>
-                  <TableCell className="hidden text-muted-foreground sm:table-cell">
-                    {booking.travelers}
-                  </TableCell>
-                  <TableCell className="font-medium text-foreground">
-                    ₹{booking.totalPrice.toLocaleString()}
-                  </TableCell>
-                  <TableCell>
-                    <StatusBadge status={booking.status} />
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-1">
-                      {booking.status === "Pending" && (
-                        <>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700"
-                            onClick={() =>
-                              setActionTarget({
-                                booking,
-                                action: "confirm",
-                              })
-                            }
-                            aria-label="Confirm booking"
-                          >
-                            <CheckCircle className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-red-500 hover:bg-red-50 hover:text-red-600"
-                            onClick={() =>
-                              setActionTarget({
-                                booking,
-                                action: "cancel",
-                              })
-                            }
-                            aria-label="Cancel booking"
-                          >
-                            <XCircle className="h-4 w-4" />
-                          </Button>
-                        </>
-                      )}
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-muted-foreground hover:bg-red-50 hover:text-red-600"
-                        onClick={() =>
-                          setActionTarget({
-                            booking,
-                            action: "delete",
-                          })
-                        }
-                        aria-label="Delete booking"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-              {filtered.length === 0 && (
-                <TableRow>
-                  <TableCell
-                    colSpan={8}
-                    className="h-24 text-center text-muted-foreground"
-                  >
-                    No bookings found.
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
+                        <span className="text-xs text-muted-foreground">
+                          {booking.customerEmail}
+                        </span>
+                        {booking.customerPhone && (
+                          <span className="text-[10px] text-primary font-medium mt-0.5">
+                            {booking.customerPhone}
+                          </span>
+                        )}
+                        {booking.requirements && (
+                          <p className="text-[10px] text-muted-foreground mt-1 bg-secondary/30 p-1.5 rounded italic line-clamp-2 max-w-[200px]">
+                            "{booking.requirements}"
+                          </p>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell className="hidden text-muted-foreground md:table-cell">
+                      <div className="flex flex-col">
+                        <span>{booking.packageTitle}</span>
+                        {booking.packageId === "enquiry" && (
+                          <Badge variant="outline" className="w-fit text-[9px] h-4 px-1 mt-1 border-primary/30 text-primary">Enquiry</Badge>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell className="hidden text-muted-foreground lg:table-cell">
+                      {new Date(booking.travelDate).toLocaleDateString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                        year: "numeric",
+                      })}
+                    </TableCell>
+                    <TableCell className="hidden text-muted-foreground sm:table-cell">
+                      {booking.travelers}
+                    </TableCell>
+                    <TableCell className="font-bold text-foreground text-sm">
+                      ₹{booking.totalPrice.toLocaleString()}
+                    </TableCell>
+                    <TableCell>
+                      <StatusBadge status={booking.status} />
+                    </TableCell>
+                    <TableCell className="text-right px-4">
+                      <div className="flex items-center justify-end gap-1">
+                        {booking.status === "Pending" && (
+                          <>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700 rounded-xl"
+                              onClick={() =>
+                                setActionTarget({
+                                  booking,
+                                  action: "confirm",
+                                })
+                              }
+                              aria-label="Confirm booking"
+                            >
+                              <CheckCircle className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-red-500 hover:bg-red-50 hover:text-red-600 rounded-xl"
+                              onClick={() =>
+                                setActionTarget({
+                                  booking,
+                                  action: "cancel",
+                                })
+                              }
+                              aria-label="Cancel booking"
+                            >
+                              <XCircle className="h-4 w-4" />
+                            </Button>
+                          </>
+                        )}
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-muted-foreground hover:bg-red-50 hover:text-red-600 rounded-xl"
+                          onClick={() =>
+                            setActionTarget({
+                              booking,
+                              action: "delete",
+                            })
+                          }
+                          aria-label="Delete booking"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {filtered.length === 0 && (
+                  <TableRow>
+                    <TableCell
+                      colSpan={8}
+                      className="h-24 text-center text-muted-foreground"
+                    >
+                      No bookings found.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
 

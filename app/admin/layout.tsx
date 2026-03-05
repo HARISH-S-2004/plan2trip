@@ -40,7 +40,7 @@ export default function AdminLayout({
       {isLoginPage ? (
         <div className="min-h-screen bg-background">{children}</div>
       ) : (
-        <div className="relative flex min-h-screen bg-background">
+        <div className="relative flex min-h-screen bg-background overflow-x-hidden">
           {/* Floating Logout Button */}
           <Button
             onClick={handleLogout}
@@ -50,43 +50,45 @@ export default function AdminLayout({
             <LogOut className="h-5 w-5 transition-transform group-hover:translate-x-0.5" />
             <span className="sr-only">Logout</span>
           </Button>
+
           {/* Mobile overlay */}
           {mobileOpen && (
             <div
-              className="fixed inset-0 z-30 bg-foreground/20 backdrop-blur-sm lg:hidden"
+              className="fixed inset-0 z-[45] bg-background/80 backdrop-blur-sm lg:hidden"
               onClick={() => setMobileOpen(false)}
               aria-hidden="true"
             />
           )}
 
-          {/* Desktop sidebar */}
-          <div className="hidden lg:block">
+          {/* Sidebar - Desktop and Mobile */}
+          <div
+            className={cn(
+              "fixed inset-y-0 left-0 z-50 transition-all duration-300 lg:block",
+              mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0",
+              collapsed ? "w-[68px]" : "w-60"
+            )}
+          >
             <AdminSidebar
               collapsed={collapsed}
               onToggle={() => setCollapsed(!collapsed)}
-              className="fixed left-0 top-0 z-40"
+              onLinkClick={() => setMobileOpen(false)}
+              className="h-full"
             />
-          </div>
-
-          {/* Mobile sidebar */}
-          <div
-            className={cn(
-              "fixed inset-y-0 left-0 z-50 transition-transform duration-300 lg:hidden",
-              mobileOpen ? "translate-x-0" : "-translate-x-full"
-            )}
-          >
-            <AdminSidebar collapsed={false} onToggle={() => setMobileOpen(false)} />
           </div>
 
           {/* Main content */}
           <div
             className={cn(
-              "flex flex-1 flex-col transition-all duration-300",
+              "flex flex-1 flex-col transition-all duration-300 min-w-0 w-full",
               collapsed ? "lg:ml-[68px]" : "lg:ml-60"
             )}
           >
             <AdminTopbar onMobileMenuToggle={() => setMobileOpen(!mobileOpen)} />
-            <div className="flex-1 p-4 lg:p-6">{children}</div>
+            <main className="flex-1 p-4 sm:p-6 md:p-8">
+              <div className="mx-auto w-full max-w-7xl">
+                {children}
+              </div>
+            </main>
           </div>
         </div>
       )}

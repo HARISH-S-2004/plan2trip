@@ -100,11 +100,11 @@ export default function AdminHotelsPage() {
     async function uploadFile(file: File, folder: string = "hotels", customOldUrl?: string): Promise<string | null> {
         setUploading(true)
 
-        // Safety timeout: reset "uploading" state after 10 seconds if it hangs
+        // Safety timeout: reset "uploading" state after 30 seconds if it hangs (slow connections)
         const timeoutId = setTimeout(() => {
             setUploading(false)
             console.warn("Upload timed out - resetting state.")
-        }, 10000)
+        }, 30000)
 
         try {
             const oldUrl = customOldUrl || editTarget?.image || form.image
@@ -254,12 +254,12 @@ export default function AdminHotelsPage() {
                         Hotel Management
                     </h1>
                     <p className="text-sm text-muted-foreground">
-                        Manage your hotel listings, rooms, and availability.
+                        Manage your hotel properties and availability.
                     </p>
                 </div>
                 <Dialog open={addOpen} onOpenChange={(open) => { setAddOpen(open); if (!open) resetForm(); }}>
                     <DialogTrigger asChild>
-                        <Button className="bg-primary text-primary-foreground hover:bg-primary/90">
+                        <Button className="rounded-xl shadow-lg shadow-primary/20 bg-primary text-primary-foreground h-11">
                             <Plus className="mr-2 h-4 w-4" />
                             Add Hotel
                         </Button>
@@ -293,15 +293,15 @@ export default function AdminHotelsPage() {
             </div>
 
             {/* Search */}
-            <Card className="overflow-hidden border-none shadow-sm bg-secondary/20">
-                <CardContent className="p-4">
+            <Card className="gap-0 py-0 border-none shadow-sm bg-secondary/5">
+                <CardContent className="p-3 sm:p-4">
                     <div className="relative">
                         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                         <Input
                             placeholder="Search hotels by name or destination..."
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
-                            className="pl-10 bg-background border-none shadow-none h-11 rounded-xl focus-visible:ring-1 focus-visible:ring-primary/20"
+                            className="pl-9 h-11 rounded-xl bg-background border-none shadow-sm"
                         />
                     </div>
                 </CardContent>
@@ -309,29 +309,29 @@ export default function AdminHotelsPage() {
 
             {/* Table */}
             <Card className="border-none shadow-sm overflow-hidden rounded-2xl">
-                <CardHeader className="pb-2">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <CardTitle className="text-lg font-bold">All Hotels</CardTitle>
-                            <CardDescription>A list of all your hotel properties.</CardDescription>
-                        </div>
-                        <Badge variant="secondary" className="px-3 py-1 rounded-lg">
-                            {filtered.length} Properties
+                <CardHeader className="p-4 sm:p-6 pb-2">
+                    <CardTitle className="text-lg sm:text-xl font-bold">
+                        All Hotels
+                        <Badge variant="secondary" className="ml-2 font-black rounded-full px-2">
+                            {filtered.length}
                         </Badge>
-                    </div>
+                    </CardTitle>
+                    <CardDescription className="text-xs">
+                        A list of all your hotel properties and their status.
+                    </CardDescription>
                 </CardHeader>
-                <CardContent className="p-0">
+                <CardContent className="p-0 sm:p-6">
                     <div className="overflow-x-auto">
                         <Table>
-                            <TableHeader className="bg-secondary/30">
-                                <TableRow className="border-none">
-                                    <TableHead className="font-bold py-4">Hotel</TableHead>
-                                    <TableHead className="hidden md:table-cell font-bold py-4">Destination</TableHead>
-                                    <TableHead className="font-bold py-4">Price/Night</TableHead>
-                                    <TableHead className="hidden sm:table-cell font-bold py-4">Rating</TableHead>
-                                    <TableHead className="hidden sm:table-cell font-bold py-4 text-center">Rooms</TableHead>
-                                    <TableHead className="font-bold py-4">Status</TableHead>
-                                    <TableHead className="w-12 py-4"><span className="sr-only">Actions</span></TableHead>
+                            <TableHeader>
+                                <TableRow className="border-none bg-muted/30">
+                                    <TableHead className="px-4 py-3 font-bold text-foreground">Hotel</TableHead>
+                                    <TableHead className="hidden lg:table-cell py-3 font-bold text-foreground">Destination</TableHead>
+                                    <TableHead className="py-3 font-bold text-foreground">Price/Night</TableHead>
+                                    <TableHead className="hidden md:table-cell py-3 font-bold text-foreground text-center">Rating</TableHead>
+                                    <TableHead className="hidden sm:table-cell py-3 font-bold text-foreground text-center">Rooms</TableHead>
+                                    <TableHead className="py-3 font-bold text-foreground">Status</TableHead>
+                                    <TableHead className="w-12 py-3 font-bold text-foreground text-right px-4">Actions</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -348,16 +348,16 @@ export default function AdminHotelsPage() {
                                                 </div>
                                             </div>
                                         </TableCell>
-                                        <TableCell className="hidden text-muted-foreground md:table-cell font-medium py-4">{hotel.destination}</TableCell>
-                                        <TableCell className="font-bold text-foreground py-4">₹{hotel.pricePerNight.toLocaleString()}</TableCell>
-                                        <TableCell className="hidden sm:table-cell py-4">
-                                            <div className="flex items-center gap-1 bg-gold/10 text-gold-foreground w-fit px-2 py-0.5 rounded-lg border border-gold/20">
+                                        <TableCell className="hidden lg:table-cell text-muted-foreground/70 text-xs font-medium py-4">{hotel.destination}</TableCell>
+                                        <TableCell className="font-bold text-foreground text-sm py-4">₹{hotel.pricePerNight.toLocaleString()}</TableCell>
+                                        <TableCell className="hidden md:table-cell text-center py-4">
+                                            <div className="flex items-center justify-center gap-1">
                                                 <Star className="h-3 w-3 fill-gold text-gold" />
-                                                <span className="text-xs font-bold">{hotel.rating}</span>
+                                                <span className="text-xs font-bold text-foreground/80">{hotel.rating}</span>
                                             </div>
                                         </TableCell>
-                                        <TableCell className="hidden sm:table-cell text-center py-4">
-                                            <Badge variant="outline" className="font-bold text-[10px] rounded-md px-2 border-primary/20 text-primary">
+                                        <TableCell className="hidden sm:table-cell text-center py-4 text-muted-foreground font-bold italic">
+                                            <Badge variant="outline" className="font-bold text-[10px] rounded-md px-2 border-primary/10">
                                                 {hotel.rooms?.length || 0} Types
                                             </Badge>
                                         </TableCell>
@@ -381,30 +381,30 @@ export default function AdminHotelsPage() {
                                                 </Badge>
                                             </div>
                                         </TableCell>
-                                        <TableCell className="py-4 text-right">
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger asChild>
-                                                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full hover:bg-secondary/40">
-                                                        <MoreHorizontal className="h-4 w-4" />
+                                        <TableCell className="py-4 text-right px-4">
+                                            <div className="flex items-center justify-end gap-1 sm:gap-2">
+                                                <Link href={`/hotels/${hotel.id}`} target="_blank" className="hidden sm:inline">
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary">
+                                                        <ExternalLink className="h-4 w-4" />
                                                     </Button>
-                                                </DropdownMenuTrigger>
-                                                <DropdownMenuContent align="end" className="rounded-xl border-none shadow-xl p-2 min-w-[160px]">
-                                                    <Link href={`/hotels/${hotel.id}/rooms`} target="_blank">
-                                                        <DropdownMenuItem className="rounded-lg gap-2 font-medium">
-                                                            <ExternalLink className="h-4 w-4 text-primary" />
-                                                            View on Site
+                                                </Link>
+                                                <Button variant="ghost" size="icon" onClick={() => openEdit(hotel)} className="h-8 w-8 text-muted-foreground hover:text-primary">
+                                                    <Pencil className="h-4 w-4" />
+                                                </Button>
+                                                <DropdownMenu>
+                                                    <DropdownMenuTrigger asChild>
+                                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground">
+                                                            <MoreHorizontal className="h-4 w-4" />
+                                                        </Button>
+                                                    </DropdownMenuTrigger>
+                                                    <DropdownMenuContent align="end" className="rounded-xl border-none shadow-xl">
+                                                        <DropdownMenuItem onClick={() => setDeleteTarget(hotel)} className="text-red-500 focus:text-red-500 focus:bg-red-50">
+                                                            <Trash2 className="mr-2 h-4 w-4" />
+                                                            Delete
                                                         </DropdownMenuItem>
-                                                    </Link>
-                                                    <DropdownMenuItem onClick={() => openEdit(hotel)} className="rounded-lg gap-2 font-medium">
-                                                        <Pencil className="h-4 w-4 text-blue-500" />
-                                                        Edit Hotel
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuItem variant="destructive" onClick={() => setDeleteTarget(hotel)} className="rounded-lg gap-2 font-medium">
-                                                        <Trash2 className="h-4 w-4" />
-                                                        Delete Property
-                                                    </DropdownMenuItem>
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
+                                                    </DropdownMenuContent>
+                                                </DropdownMenu>
+                                            </div>
                                         </TableCell>
                                     </TableRow>
                                 ))}

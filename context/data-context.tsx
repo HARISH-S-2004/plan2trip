@@ -87,15 +87,15 @@ const DataContext = createContext<DataContextType | undefined>(undefined)
 
 export function DataProvider({ children }: { children: React.ReactNode }) {
     const [loading, setLoading] = useState(true)
-    const [packages, setPackages] = useState<TourPackage[]>(initialPackages)
-    const [hotels, setHotels] = useState<Hotel[]>(initialHotels)
-    const [villas, setVillas] = useState<Villa[]>(initialVillas)
-    const [ads, setAds] = useState<Advertisement[]>(initialAds)
-    const [bookings, setBookings] = useState<Booking[]>(initialBookings)
-    const [testimonials, setTestimonials] = useState<Testimonial[]>(initialTestimonials)
-    const [categories, setCategories] = useState<PackageCategory[]>(initialCategories)
-    const [users, setUsers] = useState<any[]>(initialUsers)
-    const [payments, setPayments] = useState<any[]>(initialPayments)
+    const [packages, setPackages] = useState<TourPackage[]>([])
+    const [hotels, setHotels] = useState<Hotel[]>([])
+    const [villas, setVillas] = useState<Villa[]>([])
+    const [ads, setAds] = useState<Advertisement[]>([])
+    const [bookings, setBookings] = useState<Booking[]>([])
+    const [testimonials, setTestimonials] = useState<Testimonial[]>([])
+    const [categories, setCategories] = useState<PackageCategory[]>([])
+    const [users, setUsers] = useState<any[]>([])
+    const [payments, setPayments] = useState<any[]>([])
     const [footerData, setFooterData] = useState<FooterData>(initialFooterData)
     const [settings, setSettings] = useState<any>(defaultSettings)
 
@@ -121,20 +121,29 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
                 seeded.current = true
                 try {
                     console.log("Checking if seeding is required...");
-                    await Promise.all([
-                        seedCollectionIfEmpty(COLLECTIONS.packages, initialPackages),
-                        seedCollectionIfEmpty(COLLECTIONS.villas, initialVillas),
-                        seedCollectionIfEmpty(COLLECTIONS.hotels, initialHotels),
-                        seedCollectionIfEmpty(COLLECTIONS.bookings, initialBookings),
-                        seedCollectionIfEmpty(COLLECTIONS.users, initialUsers),
-                        seedCollectionIfEmpty(COLLECTIONS.payments, initialPayments),
-                        seedCollectionIfEmpty(COLLECTIONS.ads, initialAds),
-                        seedCollectionIfEmpty(COLLECTIONS.testimonials, initialTestimonials),
-                        seedCollectionIfEmpty(COLLECTIONS.categories, initialCategories),
-                        seedDocIfEmpty(COLLECTIONS.footer, "footer", initialFooterData),
-                        seedDocIfEmpty(COLLECTIONS.settings, "settings", defaultSettings),
-                    ])
-                    console.log("Seeding check complete.");
+                    // Check if system has already been initialized once
+                    const configSnap = await getDocs(collection(db, COLLECTIONS.settings));
+                    const isInitialized = configSnap.docs.some(d => d.id === "settings");
+
+                    if (!isInitialized) {
+                        console.log("First time initialization: Seeding data...");
+                        await Promise.all([
+                            seedCollectionIfEmpty(COLLECTIONS.packages, initialPackages),
+                            seedCollectionIfEmpty(COLLECTIONS.villas, initialVillas),
+                            seedCollectionIfEmpty(COLLECTIONS.hotels, initialHotels),
+                            seedCollectionIfEmpty(COLLECTIONS.bookings, initialBookings),
+                            seedCollectionIfEmpty(COLLECTIONS.users, initialUsers),
+                            seedCollectionIfEmpty(COLLECTIONS.payments, initialPayments),
+                            seedCollectionIfEmpty(COLLECTIONS.ads, initialAds),
+                            seedCollectionIfEmpty(COLLECTIONS.testimonials, initialTestimonials),
+                            seedCollectionIfEmpty(COLLECTIONS.categories, initialCategories),
+                            seedDocIfEmpty(COLLECTIONS.footer, "footer", initialFooterData),
+                            seedDocIfEmpty(COLLECTIONS.settings, "settings", defaultSettings),
+                        ])
+                        console.log("Seeding complete.");
+                    } else {
+                        console.log("System already initialized. Skipping seeding.");
+                    }
                 } catch (err) {
                     console.error("Firestore seed error:", err)
                 }
@@ -249,79 +258,141 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     }, [categories])
 
     // ── Hotel actions ────────────────────────────────────────────
-    const updateHotel = useCallback((updatedHotel: Hotel) => {
+    const updateHotel = useCallback(async (updatedHotel: Hotel) => {
+        const oldHotels = [...hotels];
         setHotels(prev => prev.map(h => h.id === updatedHotel.id ? updatedHotel : h))
-        upsertDoc(COLLECTIONS.hotels, updatedHotel.id, updatedHotel)
-    }, [])
+        try {
+            await upsertDoc(COLLECTIONS.hotels, updatedHotel.id, updatedHotel)
+        } catch (error: any) {
+            setHotels(oldHotels);
+            toast.error("Failed to save hotel changes to database.");
+        }
+    }, [hotels])
 
-    const addHotel = useCallback((newHotel: Hotel) => {
+    const addHotel = useCallback(async (newHotel: Hotel) => {
         setHotels(prev => [newHotel, ...prev])
-        upsertDoc(COLLECTIONS.hotels, newHotel.id, newHotel)
+        try {
+            await upsertDoc(COLLECTIONS.hotels, newHotel.id, newHotel)
+        } catch (error: any) {
+            setHotels(prev => prev.filter(h => h.id !== newHotel.id));
+            toast.error("Failed to add hotel to database.");
+        }
     }, [])
 
     const deleteHotel = useCallback(async (id: string) => {
         const hotel = hotels.find((h) => h.id === id)
+        const oldHotels = [...hotels];
         setHotels(prev => prev.filter(h => h.id !== id))
-        if (hotel?.image) await deleteImage(hotel.image)
-        if (hotel?.rooms) {
-            for (const room of hotel.rooms) {
-                if (room.image) await deleteImage(room.image)
+        try {
+            if (hotel?.image) await deleteImage(hotel.image)
+            if (hotel?.rooms) {
+                for (const room of hotel.rooms) {
+                    if (room.image) await deleteImage(room.image)
+                }
             }
+            await removeDoc(COLLECTIONS.hotels, id)
+        } catch (error: any) {
+            setHotels(oldHotels);
+            toast.error("Failed to delete hotel.");
         }
-        removeDoc(COLLECTIONS.hotels, id)
     }, [hotels])
 
     // ── Villa actions ────────────────────────────────────────────
-    const updateVilla = useCallback((updatedVilla: Villa) => {
+    const updateVilla = useCallback(async (updatedVilla: Villa) => {
+        const oldVillas = [...villas];
         setVillas(prev => prev.map(v => v.id === updatedVilla.id ? updatedVilla : v))
-        upsertDoc(COLLECTIONS.villas, updatedVilla.id, updatedVilla)
-    }, [])
+        try {
+            await upsertDoc(COLLECTIONS.villas, updatedVilla.id, updatedVilla)
+        } catch (error: any) {
+            setVillas(oldVillas);
+            toast.error("Failed to save villa changes to database.");
+        }
+    }, [villas])
 
-    const addVilla = useCallback((newVilla: Villa) => {
+    const addVilla = useCallback(async (newVilla: Villa) => {
         setVillas(prev => [newVilla, ...prev])
-        upsertDoc(COLLECTIONS.villas, newVilla.id, newVilla)
+        try {
+            await upsertDoc(COLLECTIONS.villas, newVilla.id, newVilla)
+        } catch (error: any) {
+            setVillas(prev => prev.filter(v => v.id !== newVilla.id));
+            toast.error("Failed to add villa to database.");
+        }
     }, [])
 
     const deleteVilla = useCallback(async (id: string) => {
         const villa = villas.find((v) => v.id === id)
+        const oldVillas = [...villas];
         setVillas(prev => prev.filter(v => v.id !== id))
-        if (villa?.image) await deleteImage(villa.image)
-        if (villa?.rooms) {
-            for (const room of villa.rooms) {
-                if (room.image) await deleteImage(room.image)
+        try {
+            if (villa?.image) await deleteImage(villa.image)
+            if (villa?.rooms) {
+                for (const room of villa.rooms) {
+                    if (room.image) await deleteImage(room.image)
+                }
             }
+            await removeDoc(COLLECTIONS.villas, id)
+        } catch (error: any) {
+            setVillas(oldVillas);
+            toast.error("Failed to delete villa.");
         }
-        removeDoc(COLLECTIONS.villas, id)
     }, [villas])
 
     // ── Ad actions ───────────────────────────────────────────────
-    const updateAd = useCallback((updatedAd: Advertisement) => {
+    const updateAd = useCallback(async (updatedAd: Advertisement) => {
+        const oldAds = [...ads];
         setAds(prev => prev.map(a => a.id === updatedAd.id ? updatedAd : a))
-        upsertDoc(COLLECTIONS.ads, updatedAd.id, updatedAd)
-    }, [])
+        try {
+            await upsertDoc(COLLECTIONS.ads, updatedAd.id, updatedAd)
+        } catch (error: any) {
+            setAds(oldAds);
+            toast.error("Failed to save advertisement changes.");
+        }
+    }, [ads])
 
-    const addAd = useCallback((newAd: Advertisement) => {
+    const addAd = useCallback(async (newAd: Advertisement) => {
         setAds(prev => [newAd, ...prev])
-        upsertDoc(COLLECTIONS.ads, newAd.id, newAd)
+        try {
+            await upsertDoc(COLLECTIONS.ads, newAd.id, newAd)
+        } catch (error: any) {
+            setAds(prev => prev.filter(a => a.id !== newAd.id));
+            toast.error("Failed to add advertisement.");
+        }
     }, [])
 
     const deleteAd = useCallback(async (id: string) => {
         const ad = ads.find((a) => a.id === id)
+        const oldAds = [...ads];
         setAds(prev => prev.filter(a => a.id !== id))
-        if (ad?.image) await deleteImage(ad.image)
-        removeDoc(COLLECTIONS.ads, id)
+        try {
+            if (ad?.image) await deleteImage(ad.image)
+            await removeDoc(COLLECTIONS.ads, id)
+        } catch (error: any) {
+            setAds(oldAds);
+            toast.error("Failed to delete advertisement.");
+        }
     }, [ads])
 
     // ── Booking actions ──────────────────────────────────────────
-    const addBooking = useCallback((newBooking: Booking) => {
+    const addBooking = useCallback(async (newBooking: Booking) => {
         setBookings(prev => [newBooking, ...prev])
-        upsertDoc(COLLECTIONS.bookings, newBooking.id, newBooking)
+        try {
+            await upsertDoc(COLLECTIONS.bookings, newBooking.id, newBooking)
+        } catch (error: any) {
+            setBookings(prev => prev.filter(b => b.id !== newBooking.id));
+            toast.error("Failed to save booking to database.");
+        }
     }, [])
 
-    const deleteBooking = useCallback((id: string) => {
+    const deleteBooking = useCallback(async (id: string) => {
+        const oldBookings = [...bookings];
         setBookings(prev => prev.filter(b => b.id !== id))
-        removeDoc(COLLECTIONS.bookings, id)
-    }, [])
+        try {
+            await removeDoc(COLLECTIONS.bookings, id)
+        } catch (error: any) {
+            setBookings(oldBookings);
+            toast.error("Failed to delete booking.");
+        }
+    }, [bookings])
 
     const updateBookingStatus = useCallback((id: string, status: "Confirmed" | "Pending" | "Cancelled") => {
         setBookings(prev => prev.map(b => b.id === id ? { ...b, status } : b))
@@ -359,20 +430,37 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     }, [])
 
     // ── Payment actions ──────────────────────────────────────────
-    const addPayment = useCallback((newPayment: any) => {
+    const addPayment = useCallback(async (newPayment: any) => {
         setPayments(prev => [newPayment, ...prev])
-        upsertDoc(COLLECTIONS.payments, newPayment.id, newPayment)
+        try {
+            await upsertDoc(COLLECTIONS.payments, newPayment.id, newPayment)
+        } catch (error: any) {
+            setPayments(prev => prev.filter(p => p.id !== newPayment.id));
+            toast.error("Failed to add payment.");
+        }
     }, [])
 
-    const updatePayment = useCallback((updatedPayment: any) => {
+    const updatePayment = useCallback(async (updatedPayment: any) => {
+        const oldPayments = [...payments];
         setPayments(prev => prev.map(p => p.id === updatedPayment.id ? updatedPayment : p))
-        upsertDoc(COLLECTIONS.payments, updatedPayment.id, updatedPayment)
-    }, [])
+        try {
+            await upsertDoc(COLLECTIONS.payments, updatedPayment.id, updatedPayment)
+        } catch (error: any) {
+            setPayments(oldPayments);
+            toast.error("Failed to update payment status.");
+        }
+    }, [payments])
 
-    const deletePayment = useCallback((id: string) => {
+    const deletePayment = useCallback(async (id: string) => {
+        const oldPayments = [...payments];
         setPayments(prev => prev.filter(p => p.id !== id))
-        removeDoc(COLLECTIONS.payments, id)
-    }, [])
+        try {
+            await removeDoc(COLLECTIONS.payments, id)
+        } catch (error: any) {
+            setPayments(oldPayments);
+            toast.error("Failed to delete transaction.");
+        }
+    }, [payments])
 
     // ── Testimonial actions ──────────────────────────────────────
     const updateTestimonial = useCallback((updatedTestimonial: Testimonial) => {
@@ -391,16 +479,28 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     }, [])
 
     // ── Footer actions ───────────────────────────────────────────
-    const updateFooter = useCallback((data: FooterData) => {
+    const updateFooter = useCallback(async (data: FooterData) => {
+        const oldData = { ...footerData };
         setFooterData(data)
-        upsertDoc(COLLECTIONS.footer, "footer", data)
-    }, [])
+        try {
+            await upsertDoc(COLLECTIONS.footer, "footer", data)
+        } catch (error: any) {
+            setFooterData(oldData);
+            toast.error("Failed to save footer settings.");
+        }
+    }, [footerData])
 
     // ── Settings actions ─────────────────────────────────────────
-    const updateSettings = useCallback((newSettings: any) => {
+    const updateSettings = useCallback(async (newSettings: any) => {
+        const oldSettings = { ...settings };
         setSettings(newSettings)
-        upsertDoc(COLLECTIONS.settings, "settings", newSettings)
-    }, [])
+        try {
+            await upsertDoc(COLLECTIONS.settings, "settings", newSettings)
+        } catch (error: any) {
+            setSettings(oldSettings);
+            toast.error("Failed to save global settings.");
+        }
+    }, [settings])
 
     return (
         <DataContext.Provider

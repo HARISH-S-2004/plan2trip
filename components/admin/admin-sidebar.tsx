@@ -47,23 +47,21 @@ interface AdminSidebarProps {
   className?: string
 }
 
-export function AdminSidebar({ collapsed, onToggle, className }: AdminSidebarProps) {
+export function AdminSidebar({ collapsed, onToggle, className, onLinkClick }: AdminSidebarProps & { onLinkClick?: () => void }) {
   const pathname = usePathname()
-
-
 
   return (
     <TooltipProvider delayDuration={0}>
       <aside
         className={cn(
-          "flex h-screen flex-col border-r border-border bg-card transition-all duration-300",
+          "flex h-full flex-col border-r border-border bg-card transition-all duration-300",
           collapsed ? "w-[68px]" : "w-60",
           className
         )}
       >
         {/* Logo */}
         <div className="flex h-16 items-center border-b border-border px-4">
-          <Link href="/admin" className="flex items-center gap-2.5 overflow-hidden">
+          <Link href="/admin" onClick={onLinkClick} className="flex items-center gap-2.5 overflow-hidden">
             <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-lg">
               <img src="/logo.png" alt="Plan2Trip" className="h-full w-full object-cover" />
             </div>
@@ -92,6 +90,7 @@ export function AdminSidebar({ collapsed, onToggle, className }: AdminSidebarPro
                 <Link
                   key={link.href}
                   href={link.href}
+                  onClick={onLinkClick}
                   className={cn(
                     "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
                     isActive
@@ -130,7 +129,7 @@ export function AdminSidebar({ collapsed, onToggle, className }: AdminSidebarPro
             variant="ghost"
             size="sm"
             onClick={onToggle}
-            className="w-full justify-center"
+            className="hidden lg:flex w-full justify-center"
             aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
             {collapsed ? (
