@@ -17,9 +17,24 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { cn } from "@/lib/utils"
 import type { TourPackage } from "@/lib/data"
 import { EnquiryDialog } from "../enquiry-dialog"
-
-export function PackageDetailsClient({ pkg }: { pkg: TourPackage }) {
+import { useData } from "@/context/data-context"
+export function PackageDetailsClient({ id, initialPkg }: { id: string; initialPkg?: TourPackage }) {
   const [activeTab, setActiveTab] = useState("overview")
+  const { packages } = useData()
+  const pkg = packages.find((p) => p.id === id) || initialPkg
+
+  if (!pkg) {
+    return (
+      <div className="flex flex-col items-center justify-center py-32 text-center">
+        <MapPin className="mb-4 h-12 w-12 text-muted-foreground/40" />
+        <h3 className="mb-2 text-xl font-bold text-foreground">Package Not Found</h3>
+        <p className="mb-6 text-muted-foreground">The package you are looking for does not exist or has been removed.</p>
+        <Link href="/packages">
+          <Button variant="outline">Browse All Packages</Button>
+        </Link>
+      </div>
+    )
+  }
 
   return (
     <div>

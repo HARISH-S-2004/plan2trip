@@ -1,4 +1,3 @@
-import { notFound } from "next/navigation"
 import { packages } from "@/lib/data"
 import { PackageDetailsClient } from "@/components/packages/package-details"
 
@@ -15,7 +14,6 @@ export default async function PackageDetailsPage({
 }) {
   const { id } = await params
   const pkg = packages.find((p) => p.id === id)
-  if (!pkg) notFound()
 
-  return <PackageDetailsClient pkg={pkg} />
+  return <PackageDetailsClient id={id} initialPkg={pkg} />
 }
